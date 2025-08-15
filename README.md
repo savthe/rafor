@@ -36,13 +36,15 @@ fn main() {
         0.4, 2.1
     ];
     let targets = [1, 5, 1, -15, 5];
-    let options = Classifier::train_defaults()
-        .with_max_depth(15)
-        .with_trees(40)
-        .with_threads(num_cpus::get())
-        .with_seed(42)
-        .clone();
-    let predictor = Classifier::fit(&dataset, &targets, &options);
+    let predictor = Classifier::fit(
+        &dataset,
+        &targets,
+        &Classifier::train_defaults()
+            .with_max_depth(15)
+            .with_trees(40)
+            .with_threads(num_cpus::get())
+            .with_seed(42),
+    );
 
     // Get predictions for same dataset.
     let predictions = predictor.predict(&dataset, num_cpus::get());
