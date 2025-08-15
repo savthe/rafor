@@ -7,8 +7,9 @@ each chunk is a single sample. During training, `num_features` is defined as
 Train will panic if `dataset.len()` is not divisible by `targets.len()`.
 
 # Classification
-Decision tree classifier (`dt::Classifier`) and random forest classifier (`rf::Classifier`) expect
-the labels to be `i64`. By default classifiers use Gini index for evaluating the split impurity.
+Decision tree classifier (`rafor::dt::Classifier`) and random forest classifier
+(`rafor::Classifier`) expect the labels to be `i64`. By default classifiers use Gini index for
+evaluating the split impurity.
 
 Classifiers provide method `predict` for predicting a batch of samples, it returns `Vec<i64>` with
 predicted class labels. Method `predict_one` returns `i64` -- a predicted class for a single sample.
@@ -22,7 +23,7 @@ is `decode` method which receives `u32` internal label and returns `i64` value.
 
 ```Rust
 use rafor::builders::*; // Required to use .with_option builders.
-use rafor::rf::Classifier;
+use rafor::Classifier;
 use num_cpus; // Requires num_cpus dependency in Cargo.toml
 
 fn main() {
@@ -56,8 +57,9 @@ fn main() {
 ```
 
 # Regression
-Decision tree regressor (`dt::Regressor`) and random forest regressor (`rf::Regressor`) expect
-the targets to be `f32`. By default regressors use Mse score for evaluating the split impurity.
+Decision tree regressor (`rafor::dt::Regressor`) and random forest regressor (`rafor::Regressor`)
+expect the targets to be `f32`. By default regressors use Mse score for evaluating the split
+impurity.
 
 Regressor interface is mostly similar to `Classifier`, please see examples folder.
 
@@ -68,7 +70,7 @@ can be used for serialization and deserialization.
 Below is an exemple of using [bincode](https://docs.rs/bincode/latest/bincode/). 
 ```Rust
 use std::fs::File;
-use rafor::rf::Classifier;
+use rafor::Classifier;
 
 fn main() {
     let dataset = [0.7, 0.0, 0.8, 1.0, 0.7, 0.0];
