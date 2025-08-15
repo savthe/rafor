@@ -60,7 +60,7 @@ fn main() {
 
 # Regression
 Decision tree regressor (`rafor::dt::Regressor`) and random forest regressor (`rafor::Regressor`)
-expect the targets to be `f32`. By default regressors use Mse score for evaluating the split
+expect the targets to be `f32`. By default regressors use MSE score for evaluating the split
 impurity.
 
 Regressor interface is mostly similar to `Classifier`, please see examples folder.
@@ -69,7 +69,7 @@ Regressor interface is mostly similar to `Classifier`, please see examples folde
 All models support [serde](https://docs.rs/serde/latest/serde/), so any lib that supports `serde`
 can be used for serialization and deserialization. 
 
-Below is an exemple of using [bincode](https://docs.rs/bincode/latest/bincode/). 
+Below is an example of using [bincode](https://docs.rs/bincode/latest/bincode/). 
 ```Rust
 use std::fs::File;
 use rafor::Classifier;
