@@ -96,6 +96,10 @@ fn main() {
 }
 ```
 
+# Issues
+Please keep in mind that this is a new lib and it may contain bugs. I'll do my best to test it, but
+still caution is advised. 
+
 ## License
 Licensed under either of [Apache License, Version 2.0](LICENSE-APACHE) or [MIT license](LICENSE-MIT)
 at your option.
