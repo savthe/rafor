@@ -15,7 +15,7 @@ Classifiers provide method `predict` for predicting a batch of samples, it retur
 predicted class labels. Method `predict_one` returns `i64` -- a predicted class for a single sample.
 
 To get probabilities distribution, there is a method `proba` which returns a `Vec<f32>` of length
-$NumSamples \cdot NumClasses$ where each chunk of $NumClasses$ elements contains the probabilities
+`num_samples * num_classes` where each chunk of `num_classes` elements contains the probabilities
 of classes for a sample. Internally the `i64` class labels are mapped into numbers `0, 1, ...` of
 type `u32`. To decode classes, `Classifier` provides method `get_decode_table`, which returns 
 `&[i64]` - a map where index is an internal representation, and a value - `i64` class. Also there
