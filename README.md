@@ -1,6 +1,6 @@
-# Overview
-Rafor is a performance-oriented decision trees and random forest library.
+*Rafor* is a performance-oriented decision trees and random forest library.
 
+# Dataset
 The dataset is a single `f32` slice which is processed in chunks of `num_features` elements,
 each chunk is a single sample. During training, `num_features` is defined as 
 `dataset.len() / targets.len()`.
