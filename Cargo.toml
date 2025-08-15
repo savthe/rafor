@@ -1,0 +1,23 @@
+[package]
+name = "rafor"
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+authors = ["Andrei Stroganov <savthe@gmail.com>"]
+description = "A performance-oriented random forest library."
+readme = "README.md"
+repository = "https://github.com/savthe/rafor/"
+exclude = []
+
+[dependencies]
+argminmax = { version = "0.6", default-features = false, features = ["float"] }
+radsort = "0.1.1"
+rand = "0.9.1"
+serde = { version = "1.0.219", features = ["derive"] }
+
+[dev-dependencies]
+bincode = { version = "2.0", features = ["serde"] }
+num_cpus = "1.16"
+
+[profile.release]
+debug = true
