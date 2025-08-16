@@ -7,6 +7,15 @@ use crate::{
 };
 use serde::{Deserialize, Serialize};
 
+/// A random forest classifier.
+/// # Example
+/// ```
+/// let dataset = [0.7, 0.0, 0.8, 1.0, 0.7, 0.0];
+/// let targets = [1, 5, 1];
+/// let predictor = rf::Classifier::fit(&dataset, &targets, &rf::Classifier::default_config());
+/// let predictions = predictor.predict(&dataset, 1);
+/// assert_eq!(&predictions, &[1, 5, 1]);
+/// ```
 #[derive(Default, Clone, Serialize, Deserialize)]
 pub struct Classifier {
     ensemble: Vec<TreeClassifierImpl>,
@@ -15,14 +24,14 @@ pub struct Classifier {
 
 #[derive(Clone)]
 pub struct ClassifierConfig {
-    tree_config: TreeConfig,
+    train_config: TrainConfig,
     ensemble_config: EnsembleConfig,
 }
 
 impl Default for ClassifierConfig {
     fn default() -> Self {
         Self {
-            tree_config: TreeConfig {
+            train_config: TrainConfig {
                 max_depth: usize::MAX,
                 max_features: NumFeatures::SQRT,
                 seed: 42,
@@ -31,7 +40,6 @@ impl Default for ClassifierConfig {
             ensemble_config: EnsembleConfig {
                 num_trees: 100,
                 num_threads: 1,
-                seed: 42,
             },
         }
     }
@@ -41,13 +49,13 @@ impl Default for ClassifierConfig {
 struct Trainee {
     tree: TreeClassifierImpl,
     num_classes: usize,
-    tree_config: TreeConfig,
+    conf: TrainConfig,
 }
 
 impl ensemble_trainer::Trainable<ClassLabel> for Trainee {
     fn fit(&mut self, ts: Trainset<ClassLabel>, seed: u64) {
-        self.tree_config.seed = seed;
-        self.tree = TreeClassifierImpl::fit(ts, self.num_classes, &self.tree_config);
+        self.conf.seed = seed;
+        self.tree = TreeClassifierImpl::fit(ts, self.num_classes, &self.conf);
     }
 }
 
@@ -57,16 +65,6 @@ impl ensemble_predictor::Predictor for TreeClassifierImpl {
     }
 }
 
-/// A random forest classifier.
-/// # Examples
-///
-/// ```
-/// let dataset = [0.7, 0.0, 0.8, 1.0, 0.7, 0.0];
-/// let targets = [1, 5, 1];
-/// let predictor = rf::Classifier::fit(&dataset, &targets, &rf::Classifier::default_config());
-/// let predictions = predictor.predict(&dataset, 1);
-/// assert_eq!(&predictions, &[1, 5, 1]);
-/// ```
 impl Classifier {
     /// Predicts classes for a set of samples.
     /// Dataset is a vector of floats with length multiple of num_features().
@@ -87,7 +85,7 @@ impl Classifier {
         ensemble_predictor::predict(&self.ensemble, &dataset, num_classes, num_threads)
     }
 
-    // Returns a number of features for a trained tree.
+    /// Returns a number of features for a trained tree.
     pub fn num_features(&self) -> usize {
         self.ensemble[0].num_features()
     }
@@ -103,10 +101,16 @@ impl Classifier {
         let proto = Trainee {
             tree: TreeClassifierImpl::default(),
             num_classes: classes_map.num_classes(),
-            tree_config: conf.tree_config.clone(),
+            conf: conf.train_config.clone(),
         };
 
-        let ens = ensemble_trainer::fit(proto, ds.as_view(), &labels_enc, &conf.ensemble_config);
+        let ens = ensemble_trainer::fit(
+            proto,
+            ds.as_view(),
+            &labels_enc,
+            &conf.ensemble_config,
+            conf.train_config.seed,
+        );
 
         Classifier {
             ensemble: ens.into_iter().map(|t| t.tree).collect(),
@@ -126,9 +130,9 @@ impl ClassDecode for Classifier {
     }
 }
 
-impl TreeConfigProvider for ClassifierConfig {
-    fn tree_config(&mut self) -> &mut TreeConfig {
-        &mut self.tree_config
+impl TrainConfigProvider for ClassifierConfig {
+    fn train_config(&mut self) -> &mut TrainConfig {
+        &mut self.train_config
     }
 }
 

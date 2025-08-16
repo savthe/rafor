@@ -5,8 +5,8 @@ use super::{
     DecisionTree, Trainset,
 };
 use crate::{
+    config::{Metric, TrainConfig},
     metrics::{self, WithClasses},
-    config::{Metric, TreeConfig},
     ClassLabel, DatasetView, Weightable,
 };
 
@@ -71,7 +71,7 @@ impl TreeClassifierImpl {
     pub fn fit(
         ts: Trainset<ClassLabel>,
         num_classes: usize,
-        config: &TreeConfig,
+        config: &TrainConfig,
     ) -> TreeClassifierImpl {
         let mut tr = TreeClassifierImpl {
             proba: Vec::new(),

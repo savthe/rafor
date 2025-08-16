@@ -37,7 +37,8 @@ impl ImpurityMetric<ClassLabel> for Gini {
     #[inline(always)]
     fn pop(&mut self, bin_index: ClassLabel, weight: LabelWeight) {
         let weight = weight as u64;
-        self.sum_squares = self.sum_squares + weight * weight - 2 * self.bins[bin_index as usize] * weight;
+        self.sum_squares =
+            self.sum_squares + weight * weight - 2 * self.bins[bin_index as usize] * weight;
         self.bins[bin_index as usize] -= weight;
         self.num_items -= weight;
     }

@@ -1,6 +1,6 @@
 use crate::{
-    decision_tree::Trainset,
     config::EnsembleConfig,
+    decision_tree::Trainset,
     weight::{Weightable, TARGET_WEIGHT_BITS},
     DatasetView, LabelWeight,
 };
@@ -20,13 +20,14 @@ pub fn fit<Target, Trainee>(
     view: DatasetView,
     targets: &[Target],
     config: &EnsembleConfig,
+    seed: u64,
 ) -> Vec<Trainee>
 where
     Target: Weightable + Copy + Sync + Send,
     Trainee: Trainable<Target> + Clone + Send + Sync,
 {
     assert!(config.num_threads > 0);
-    let mut rng = SmallRng::seed_from_u64(config.seed);
+    let mut rng = SmallRng::seed_from_u64(seed);
     let seeds: Vec<u64> = (0..config.num_trees).map(|_| rng.random()).collect();
 
     let num_trees = config.num_trees;

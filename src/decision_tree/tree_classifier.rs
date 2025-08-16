@@ -1,11 +1,20 @@
 use super::{classify, ClassDecode, ClassesMapping, Trainset, TreeClassifierImpl};
 use crate::{
-    config::{Metric, NumFeatures, TreeConfig},
+    config::{Metric, NumFeatures, TrainConfig},
     config_builders::*,
     Dataset, DatasetView,
 };
 use serde::{Deserialize, Serialize};
 
+/// A classifier tree.
+/// # Examples
+/// ```
+/// let dataset = [0.7, 0.0, 0.8, 1.0, 0.7, 0.0];
+/// let targets = [1, 5, 1];
+/// let predictor = dt::Classifier::fit(&dataset, &targets, &dt::Classifier::default_config());
+/// let predictions = predictor.predict(&dataset);
+/// assert_eq!(&predictions, &[1, 5, 1]);
+/// ```
 #[derive(Serialize, Deserialize)]
 pub struct Classifier {
     classifier: TreeClassifierImpl,
@@ -13,13 +22,13 @@ pub struct Classifier {
 }
 
 pub struct ClassifierConfig {
-    config: TreeConfig,
+    config: TrainConfig,
 }
 
 impl Default for ClassifierConfig {
     fn default() -> Self {
         Self {
-            config: TreeConfig {
+            config: TrainConfig {
                 max_depth: usize::MAX,
                 max_features: NumFeatures::NUMBER(usize::MAX),
                 seed: 42,
@@ -29,8 +38,8 @@ impl Default for ClassifierConfig {
     }
 }
 
-impl TreeConfigProvider for ClassifierConfig {
-    fn tree_config(&mut self) -> &mut TreeConfig {
+impl TrainConfigProvider for ClassifierConfig {
+    fn train_config(&mut self) -> &mut TrainConfig {
         &mut self.config
     }
 }
@@ -38,16 +47,6 @@ impl TreeConfigProvider for ClassifierConfig {
 impl CommonConfigBuilder for ClassifierConfig {}
 impl ClassifierConfigBuilder for ClassifierConfig {}
 
-/// A classifier tree.
-/// # Examples
-///
-/// ```
-/// let dataset = [0.7, 0.0, 0.8, 1.0, 0.7, 0.0];
-/// let targets = [1, 5, 1];
-/// let predictor = dt::Classifier::fit(&dataset, &targets, &dt::Classifier::default_config());
-/// let predictions = predictor.predict(&dataset);
-/// assert_eq!(&predictions, &[1, 5, 1]);
-/// ```
 impl Classifier {
     /// Predicts classes for a set of samples.
     /// Dataset is a vector of floats with length multiple of num_features().
@@ -86,7 +85,7 @@ impl Classifier {
         }
     }
 
-    // Returns a number of features for a trained tree.
+    /// Returns a number of features for a trained tree.
     pub fn num_features(&self) -> usize {
         self.classifier.num_features()
     }

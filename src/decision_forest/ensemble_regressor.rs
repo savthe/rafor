@@ -1,9 +1,21 @@
 use super::{ensemble_predictor, ensemble_trainer};
 use crate::{
-    config::*, config_builders::*, decision_tree::{Trainset, TreeRegressorImpl}, Dataset, DatasetView
+    config::*,
+    config_builders::*,
+    decision_tree::{Trainset, TreeRegressorImpl},
+    Dataset, DatasetView,
 };
 use serde::{Deserialize, Serialize};
 
+/// A random forest regressor.
+/// # Example
+/// ```
+/// let dataset = [0.7, 0.0, 0.8, 1.0, 0.7, 0.0];
+/// let targets = [1.0, 0.5, 0.2];
+/// let predictor = rf::Regressor::fit(&dataset, &targets, &rf::Regressor::default_config());
+/// let predictions = predictor.predict(&dataset, 1);
+/// println!("{:?}", predictions);
+/// ```
 #[derive(Default, Serialize, Deserialize)]
 pub struct Regressor {
     ensemble: Vec<TreeRegressorImpl>,
@@ -11,14 +23,14 @@ pub struct Regressor {
 
 #[derive(Clone)]
 pub struct RegressorConfig {
-    tree_config: TreeConfig,
+    train_config: TrainConfig,
     ensemble_config: EnsembleConfig,
 }
 
 impl Default for RegressorConfig {
     fn default() -> Self {
         Self {
-            tree_config: TreeConfig {
+            train_config: TrainConfig {
                 max_depth: usize::MAX,
                 max_features: NumFeatures::SQRT,
                 seed: 42,
@@ -27,7 +39,6 @@ impl Default for RegressorConfig {
             ensemble_config: EnsembleConfig {
                 num_trees: 100,
                 num_threads: 1,
-                seed: 42,
             },
         }
     }
@@ -36,22 +47,22 @@ impl Default for RegressorConfig {
 #[derive(Clone)]
 struct Trainee {
     tree: TreeRegressorImpl,
-    tree_config: TreeConfig,
+    train_config: TrainConfig,
 }
 
 impl Trainee {
-    fn new(tree_config: TreeConfig) -> Self {
+    fn new(train_config: TrainConfig) -> Self {
         Self {
             tree: TreeRegressorImpl::default(),
-            tree_config,
+            train_config,
         }
     }
 }
 
 impl ensemble_trainer::Trainable<f32> for Trainee {
     fn fit(&mut self, ts: Trainset<f32>, seed: u64) {
-        self.tree_config.seed = seed;
-        self.tree = TreeRegressorImpl::fit(ts, &self.tree_config);
+        self.train_config.seed = seed;
+        self.tree = TreeRegressorImpl::fit(ts, &self.train_config);
     }
 }
 
@@ -61,17 +72,6 @@ impl ensemble_predictor::Predictor for TreeRegressorImpl {
     }
 }
 
-/// A random forest regressor.
-/// # Examples
-///
-/// ```
-/// // Note that we have two samples (0.7, 0.0) pointing to different values: [1.0, 0.2].
-/// let dataset = [0.7, 0.0, 0.8, 1.0, 0.7, 0.0];
-/// let targets = [1.0, 0.5, 0.2];
-/// let predictor = rf::Regressor::fit(&dataset, &targets, &rf::Regressor::default_config());
-/// let predictions = predictor.predict(&dataset, 1);
-/// println!("Predictions: {:?}", predictions);
-/// ```
 impl Regressor {
     /// Predicts regression values for a set of samples.
     /// Dataset is a vector of floats with length multiple of num_features().
@@ -90,15 +90,21 @@ impl Regressor {
     /// targets.len().
     pub fn fit(data: &[f32], targets: &[f32], config: &RegressorConfig) -> Regressor {
         let ds = Dataset::with_transposed(data, targets.len());
-        let trainee = Trainee::new(config.tree_config.clone());
-        let ens = ensemble_trainer::fit(trainee, ds.as_view(), targets, &config.ensemble_config);
+        let trainee = Trainee::new(config.train_config.clone());
+        let ens = ensemble_trainer::fit(
+            trainee,
+            ds.as_view(),
+            targets,
+            &config.ensemble_config,
+            config.train_config.seed,
+        );
 
         Regressor {
             ensemble: ens.into_iter().map(|t| t.tree).collect(),
         }
     }
 
-    // Returns a number of features for a trained forest.
+    /// Returns a number of features for a trained forest.
     pub fn num_features(&self) -> usize {
         self.ensemble[0].num_features()
     }
@@ -109,9 +115,9 @@ impl Regressor {
     }
 }
 
-impl TreeConfigProvider for RegressorConfig {
-    fn tree_config(&mut self) -> &mut TreeConfig {
-        &mut self.tree_config
+impl TrainConfigProvider for RegressorConfig {
+    fn train_config(&mut self) -> &mut TrainConfig {
+        &mut self.train_config
     }
 }
 

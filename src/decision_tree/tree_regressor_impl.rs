@@ -3,8 +3,8 @@ use super::{
     DecisionTree, Trainset,
 };
 use crate::{
+    config::{Metric, TrainConfig},
     metrics::Mse,
-    config::{Metric, TreeConfig},
     DatasetView, LabelWeight,
 };
 use serde::{Deserialize, Serialize};
@@ -45,7 +45,7 @@ impl TreeRegressorImpl {
         self.tree.predict(sample).0
     }
 
-    pub fn fit(trainset: Trainset<f32>, config: &TreeConfig) -> TreeRegressorImpl {
+    pub fn fit(trainset: Trainset<f32>, config: &TrainConfig) -> TreeRegressorImpl {
         let mut tr = TreeRegressorImpl {
             tree: DecisionTree::new(trainset.num_features() as u16),
         };
