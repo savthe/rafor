@@ -8,7 +8,7 @@ Train will panic if `dataset.len()` is not divisible by `targets.len()`.
 
 # Classification
 Decision tree classifier (`rafor::dt::Classifier`) and random forest classifier
-(`rafor::Classifier`) expect the labels to be `i64`. By default classifiers use Gini index for
+(`rafor::rf::Classifier`) expect the labels to be `i64`. By default classifiers use Gini index for
 evaluating the split impurity.
 
 Classifiers provide method `predict` for predicting a batch of samples, it returns `Vec<i64>` with
@@ -22,9 +22,9 @@ type `u32`. To decode classes, `Classifier` provides method `get_decode_table`, 
 is `decode` method which receives `u32` internal label and returns `i64` value.
 
 ```Rust
-use rafor::builders::*; // Required to use .with_option builders.
-use rafor::Classifier;
 use num_cpus; // Requires num_cpus dependency in Cargo.toml
+use rafor::prelude::*; // Required for .with_option builders and .num_classes().
+use rafor::rf::Classifier; // Requires num_cpus dependency in Cargo.toml
 
 fn main() {
     // We have 5 samples with 3 classes.
@@ -36,15 +36,13 @@ fn main() {
         0.4, 2.1
     ];
     let targets = [1, 5, 1, -15, 5];
-    let predictor = Classifier::fit(
-        &dataset,
-        &targets,
-        &Classifier::train_defaults()
-            .with_max_depth(15)
-            .with_trees(40)
-            .with_threads(num_cpus::get())
-            .with_seed(42),
-    );
+    let options = Classifier::default_config()
+        .with_max_depth(15)
+        .with_trees(40)
+        .with_threads(num_cpus::get())
+        .with_seed(42)
+        .clone();
+    let predictor = Classifier::fit(&dataset, &targets, &options);
 
     // Get predictions for same dataset.
     let predictions = predictor.predict(&dataset, num_cpus::get());
@@ -59,7 +57,7 @@ fn main() {
 ```
 
 # Regression
-Decision tree regressor (`rafor::dt::Regressor`) and random forest regressor (`rafor::Regressor`)
+Decision tree regressor (`rafor::dt::Regressor`) and random forest regressor (`rafor::rf::Regressor`)
 expect the targets to be `f32`. By default regressors use MSE score for evaluating the split
 impurity.
 
@@ -72,12 +70,12 @@ can be used for serialization and deserialization.
 Below is an example of using [bincode](https://docs.rs/bincode/latest/bincode/). 
 ```Rust
 use std::fs::File;
-use rafor::Classifier;
+use rafor::rf::Classifier;
 
 fn main() {
     let dataset = [0.7, 0.0, 0.8, 1.0, 0.7, 0.0];
     let targets = [1, 5, 1];
-    let predictor = Classifier::fit(&dataset, &targets, &Classifier::train_defaults());
+    let predictor = Classifier::fit(&dataset, &targets, &Classifier::default_config());
 
     // Storing model.
     let mut fout = File::create("model.bin").unwrap();
