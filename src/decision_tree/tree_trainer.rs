@@ -1,7 +1,7 @@
 use super::Trainset;
 use crate::{
+    config::{NumFeatures, TrainConfig},
     metrics::ImpurityMetric,
-    config::{NumFeatures, TreeConfig},
     IndexRange, Weightable,
 };
 use radsort;
@@ -31,7 +31,7 @@ where
     features_perm: Vec<usize>,
     max_features: usize,
     rng: Option<SmallRng>,
-    conf: TreeConfig,
+    conf: TrainConfig,
     trainset: Trainset<'a, T>,
 }
 
@@ -42,7 +42,7 @@ where
 {
     pub fn fit<Trainee>(
         trainset: Trainset<T>,
-        conf: TreeConfig,
+        conf: TrainConfig,
         trainee: &mut Trainee,
         impurity_proto: I,
     ) where

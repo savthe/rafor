@@ -1,6 +1,6 @@
 use super::Trainset;
 use super::TreeRegressorImpl;
-use crate::config::{Metric, NumFeatures, TreeConfig};
+use crate::config::{Metric, NumFeatures, TrainConfig};
 use crate::config_builders::*;
 use crate::{Dataset, DatasetView};
 
@@ -19,13 +19,13 @@ pub struct Regressor {
 }
 
 pub struct RegressorConfig {
-    config: TreeConfig,
+    config: TrainConfig,
 }
 
 impl Default for RegressorConfig {
     fn default() -> Self {
         Self {
-            config: TreeConfig {
+            config: TrainConfig {
                 max_depth: usize::MAX,
                 max_features: NumFeatures::NUMBER(usize::MAX),
                 metric: Metric::MSE,
@@ -35,8 +35,8 @@ impl Default for RegressorConfig {
     }
 }
 
-impl TreeConfigProvider for RegressorConfig {
-    fn tree_config(&mut self) -> &mut TreeConfig {
+impl TrainConfigProvider for RegressorConfig {
+    fn train_config(&mut self) -> &mut TrainConfig {
         &mut self.config
     }
 }

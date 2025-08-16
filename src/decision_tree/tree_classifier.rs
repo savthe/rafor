@@ -1,6 +1,6 @@
 use super::{classify, ClassDecode, ClassesMapping, Trainset, TreeClassifierImpl};
 use crate::{
-    config::{Metric, NumFeatures, TreeConfig},
+    config::{Metric, NumFeatures, TrainConfig},
     config_builders::*,
     Dataset, DatasetView,
 };
@@ -22,13 +22,13 @@ pub struct Classifier {
 }
 
 pub struct ClassifierConfig {
-    config: TreeConfig,
+    config: TrainConfig,
 }
 
 impl Default for ClassifierConfig {
     fn default() -> Self {
         Self {
-            config: TreeConfig {
+            config: TrainConfig {
                 max_depth: usize::MAX,
                 max_features: NumFeatures::NUMBER(usize::MAX),
                 seed: 42,
@@ -38,8 +38,8 @@ impl Default for ClassifierConfig {
     }
 }
 
-impl TreeConfigProvider for ClassifierConfig {
-    fn tree_config(&mut self) -> &mut TreeConfig {
+impl TrainConfigProvider for ClassifierConfig {
+    fn train_config(&mut self) -> &mut TrainConfig {
         &mut self.config
     }
 }

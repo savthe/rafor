@@ -1,20 +1,22 @@
+//! Configurations for training.
+///
 /// Defines a split impurit metric. Currently only 2 metrics supported: Gini index for
 /// classification trees and MSE for regression trees.
 #[derive(Clone)]
 pub enum Metric {
     GINI,
-    MSE
+    MSE,
 }
 
-/// Holds config for training a decision tree.
+/// Configuration for training a decision tree.
 #[derive(Clone)]
-pub struct TreeConfig {
+pub struct TrainConfig {
     /// Max depth of a tree.
     pub max_depth: usize,
 
-    /// Seed for randomizing feature sets in splits if `max_features < num_features`. This value is
-    /// ignored for ensembles, as the trainer substitute a random value based on 
-    /// EnsembleConfig::seed.
+    /// Seed for randomizing feature sets in splits if `max_features < num_features`. When used in
+    /// ensemble config, it sets the seed for random numbers in bootstrapping and feature sets in
+    /// splits.
     pub seed: u64,
 
     /// Metric of split impurity.
@@ -26,10 +28,10 @@ pub struct TreeConfig {
     ///
     /// **Note**. If trainer couldn't find a splitting value in `num_features` features, it will consider
     /// additional features.
-    pub max_features: NumFeatures
+    pub max_features: NumFeatures,
 }
 
-/// Config for ensembles of trees.
+/// Configuration for training the ensembles of trees.
 #[derive(Clone)]
 pub struct EnsembleConfig {
     /// Number of decision trees in ensemble.
@@ -38,19 +40,15 @@ pub struct EnsembleConfig {
     /// Number of threads to use. Please note that there is no specific value for "use all cores".
     /// Maximun number of theads can be obtained useing, for instance, crate `num_cpus`.
     pub num_threads: usize,
-
-    /// Seed for random numbers in bootstrapping and feature sets in splits.
-    pub seed: u64,
 }
 
 /// Defines the limiting strategy for a number of features that are selected at each split.
 #[derive(Clone)]
 pub enum NumFeatures {
-    /// Takes `sqrt(total_features)`
+    /// Takes `sqrt(total_features)`.
     SQRT,
-    /// Takes `log2(total_features)`
+    /// Takes `log2(total_features)`.
     LOG,
     /// Sets the exact number.
-    NUMBER(usize)
+    NUMBER(usize),
 }
-

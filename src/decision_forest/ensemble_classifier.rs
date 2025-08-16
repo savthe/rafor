@@ -24,14 +24,14 @@ pub struct Classifier {
 
 #[derive(Clone)]
 pub struct ClassifierConfig {
-    tree_config: TreeConfig,
+    train_config: TrainConfig,
     ensemble_config: EnsembleConfig,
 }
 
 impl Default for ClassifierConfig {
     fn default() -> Self {
         Self {
-            tree_config: TreeConfig {
+            train_config: TrainConfig {
                 max_depth: usize::MAX,
                 max_features: NumFeatures::SQRT,
                 seed: 42,
@@ -40,7 +40,6 @@ impl Default for ClassifierConfig {
             ensemble_config: EnsembleConfig {
                 num_trees: 100,
                 num_threads: 1,
-                seed: 42,
             },
         }
     }
@@ -50,13 +49,13 @@ impl Default for ClassifierConfig {
 struct Trainee {
     tree: TreeClassifierImpl,
     num_classes: usize,
-    tree_config: TreeConfig,
+    conf: TrainConfig,
 }
 
 impl ensemble_trainer::Trainable<ClassLabel> for Trainee {
     fn fit(&mut self, ts: Trainset<ClassLabel>, seed: u64) {
-        self.tree_config.seed = seed;
-        self.tree = TreeClassifierImpl::fit(ts, self.num_classes, &self.tree_config);
+        self.conf.seed = seed;
+        self.tree = TreeClassifierImpl::fit(ts, self.num_classes, &self.conf);
     }
 }
 
@@ -102,10 +101,16 @@ impl Classifier {
         let proto = Trainee {
             tree: TreeClassifierImpl::default(),
             num_classes: classes_map.num_classes(),
-            tree_config: conf.tree_config.clone(),
+            conf: conf.train_config.clone(),
         };
 
-        let ens = ensemble_trainer::fit(proto, ds.as_view(), &labels_enc, &conf.ensemble_config);
+        let ens = ensemble_trainer::fit(
+            proto,
+            ds.as_view(),
+            &labels_enc,
+            &conf.ensemble_config,
+            conf.train_config.seed,
+        );
 
         Classifier {
             ensemble: ens.into_iter().map(|t| t.tree).collect(),
@@ -125,9 +130,9 @@ impl ClassDecode for Classifier {
     }
 }
 
-impl TreeConfigProvider for ClassifierConfig {
-    fn tree_config(&mut self) -> &mut TreeConfig {
-        &mut self.tree_config
+impl TrainConfigProvider for ClassifierConfig {
+    fn train_config(&mut self) -> &mut TrainConfig {
+        &mut self.train_config
     }
 }
 

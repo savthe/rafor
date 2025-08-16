@@ -1,30 +1,39 @@
 use crate::config;
-pub trait TreeConfigProvider: Sized {
-    fn tree_config(&mut self) -> &mut crate::config::TreeConfig;
+pub trait TrainConfigProvider: Sized {
+    fn train_config(&mut self) -> &mut crate::config::TrainConfig;
 }
 
-pub trait CommonConfigBuilder: TreeConfigProvider {
+pub trait CommonConfigBuilder: TrainConfigProvider {
+    /// Sets max tree depth.
     fn with_max_depth(&mut self, n: usize) -> &mut Self {
-        self.tree_config().max_depth = n;
+        self.train_config().max_depth = n;
         self
     }
 
+    /// Sets tree seed. It is used in Decision Trees if `max_features < total_features`. In De
     fn with_seed(&mut self, seed: u64) -> &mut Self {
-        self.tree_config().seed = seed;
+        self.train_config().seed = seed;
         self
+    }
+
+    /// Sets maximum features to consider in split.
+    fn with_max_features(&mut self, max_features: config::NumFeatures) {
+        self.train_config().max_features = max_features;
     }
 }
 
-pub trait ClassifierConfigBuilder: TreeConfigProvider {
+pub trait ClassifierConfigBuilder: TrainConfigProvider {
+    /// Sets metric to Gini index.
     fn with_gini(&mut self) -> &mut Self {
-        self.tree_config().metric = config::Metric::GINI;
+        self.train_config().metric = config::Metric::GINI;
         self
     }
 }
 
-pub trait RegressorConfigBuilder: TreeConfigProvider {
+pub trait RegressorConfigBuilder: TrainConfigProvider {
+    /// Sets metric to MSE.
     fn with_mse(&mut self) -> &mut Self {
-        self.tree_config().metric = config::Metric::MSE;
+        self.train_config().metric = config::Metric::MSE;
         self
     }
 }
@@ -33,12 +42,14 @@ pub trait EnsembleConfigProvider: Sized {
     fn ensemble_config(&mut self) -> &mut crate::config::EnsembleConfig;
 }
 
-pub trait EnsembleConfigBuilder: EnsembleConfigProvider {
+pub trait EnsembleConfigBuilder: EnsembleConfigProvider + CommonConfigBuilder {
+    /// Sets the number of threads to use. Panics if zero is specified.
     fn with_threads(&mut self, n: usize) -> &mut Self {
         self.ensemble_config().num_threads = n;
         self
     }
 
+    /// Sets number of trees in ensemble.
     fn with_trees(&mut self, n: usize) -> &mut Self {
         self.ensemble_config().num_trees = n;
         self
