@@ -12,7 +12,7 @@ mod trainset;
 mod tree_trainer;
 use decision_tree::DecisionTree;
 
-pub use classes_mapping::ClassesMapping;
+pub use classes_mapping::{ClassesMapping, ClassDecode};
 pub use trainset::Trainset;
 pub use tree_classifier_impl::TreeClassifierImpl;
 pub use tree_regressor_impl::TreeRegressorImpl;

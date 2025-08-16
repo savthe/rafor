@@ -12,17 +12,20 @@ type IndexRange = std::ops::Range<usize>;
 type ClassLabel = u32;
 type LabelWeight = u32;
 
-pub use decision_forest::ensemble_classifier::Classifier;
-pub use decision_forest::ensemble_regressor::Regressor;
+pub mod prelude {
+    pub use super::options::{
+        ClassifierOptionsBuilder, EnsembleOptionsBuilder, RegressorOptionsBuilder,
+        TreeOptionsBuilder,
+    };
+    pub use crate::decision_tree::ClassDecode;
+}
 
 pub mod dt {
     pub use super::decision_tree::tree_classifier::Classifier;
     pub use super::decision_tree::tree_regressor::Regressor;
 }
 
-pub mod builders {
-    pub use super::options::{
-        ClassifierOptionsBuilder, EnsembleOptionsBuilder, RegressorOptionsBuilder,
-        TreeOptionsBuilder,
-    };
+pub mod rf {
+    pub use crate::decision_forest::ensemble_classifier::Classifier;
+    pub use crate::decision_forest::ensemble_regressor::Regressor;
 }

@@ -1,6 +1,6 @@
 use super::{ensemble_predictor, ensemble_trainer};
 use crate::{
-    decision_tree::{classify, ClassesMapping, Trainset, TreeClassifierImpl},
+    decision_tree::{classify, ClassDecode, ClassesMapping, Trainset, TreeClassifierImpl},
     options::*,
     ClassLabel, Dataset, DatasetView,
 };
@@ -68,22 +68,6 @@ impl Classifier {
         ensemble_predictor::predict(&self.ensemble, &dataset, num_classes, num_threads)
     }
 
-    /// During classifier training all i64 labels are encoded with numbers 0, 1, 2, etc.
-    /// This method decodes a usize value into i64 according to decode table.
-    pub fn decode(&self, class_enc: usize) -> i64 {
-        self.classes_map.get_decode_table()[class_enc]
-    }
-
-    /// Returns a decode table of length num_classes().
-    pub fn get_decode_table(&self) -> &[i64] {
-        self.classes_map.get_decode_table()
-    }
-
-    /// Returns a number of classes stored during tree fitting.
-    pub fn num_classes(&self) -> usize {
-        self.classes_map.num_classes()
-    }
-
     // Returns a number of features for a trained tree.
     pub fn num_features(&self) -> usize {
         self.ensemble[0].num_features()
@@ -126,6 +110,12 @@ impl Classifier {
                 seed: 42,
             },
         }
+    }
+}
+
+impl ClassDecode for Classifier {
+    fn get_decode_table(&self) -> &[i64] {
+        self.classes_map.get_decode_table()
     }
 }
 

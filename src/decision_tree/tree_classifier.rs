@@ -1,4 +1,4 @@
-use super::{classify, ClassesMapping, Trainset, TreeClassifierImpl};
+use super::{classify, ClassesMapping, ClassDecode, Trainset, TreeClassifierImpl};
 use crate::{
     options::{
         ClassifierOptionsBuilder, Metric, NumFeatures, TreeOptions, TreeOptionsBuilder,
@@ -56,22 +56,6 @@ impl Classifier {
         self.classifier.predict(&view)
     }
 
-    /// During classifier training all i64 labels are encoded with numbers 0, 1, 2, etc.
-    /// This method decodes a usize value into i64 according to decode table.
-    pub fn decode(&self, class_enc: usize) -> i64 {
-        self.classes_map.get_decode_table()[class_enc]
-    }
-
-    /// Returns a decode table of length num_classes().
-    pub fn get_decode_table(&self) -> &[i64] {
-        self.classes_map.get_decode_table()
-    }
-
-    /// Returns a number of classes stored during tree fitting.
-    pub fn num_classes(&self) -> usize {
-        self.classes_map.num_classes()
-    }
-
     /// Trains a classifier tree with dataset given by a slice of length divisible by targets.len().
     pub fn fit(data: &[f32], labels: &[i64], opts: &TrainOptions) -> Self {
         let ds = Dataset::with_transposed(data, labels.len());
@@ -102,5 +86,11 @@ impl Classifier {
                 metric: Metric::GINI,
             },
         }
+    }
+}
+
+impl ClassDecode for Classifier {
+    fn get_decode_table(&self) -> &[i64] {
+        self.classes_map.get_decode_table()
     }
 }

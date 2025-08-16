@@ -1,5 +1,5 @@
 use rafor::dt::Classifier;
-use rafor::builders::*; // Required to use .with_option builders.
+use rafor::prelude::*; // Required for .with_option builders.
 
 fn main() {
     // We have 5 samples with 3 classes.
@@ -14,7 +14,7 @@ fn main() {
     let predictor = Classifier::fit(
         &dataset,
         &targets,
-        &Classifier::train_defaults()
+        Classifier::train_defaults()
             .with_max_depth(15)
     );
 

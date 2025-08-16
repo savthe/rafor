@@ -1,5 +1,5 @@
 use rafor::dt::Regressor;
-use rafor::builders::*; // Required to use .with_option builders.
+use rafor::prelude::*; // Required to use .with_option builders.
 
 fn main() {
     // 5 samples with 2 features each.
@@ -14,7 +14,7 @@ fn main() {
     let predictor = Regressor::fit(
         &dataset,
         &targets,
-        &Regressor::train_defaults()
+        Regressor::train_defaults()
             .with_max_depth(2)
     );
 
