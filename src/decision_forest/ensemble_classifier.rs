@@ -66,7 +66,7 @@ impl ensemble_predictor::Predictor for TreeClassifierImpl {
 }
 
 impl Classifier {
-    /// Predicts classes for a set of samples.
+    /// Predicts classes for a set of samples using `num_threads` threads.
     /// Dataset is a vector of floats with length multiple of num_features().
     pub fn predict(&self, dataset: &[f32], num_threads: usize) -> Vec<i64> {
         classify(&self.proba(dataset, num_threads), &self.classes_map)
@@ -77,8 +77,8 @@ impl Classifier {
         classify(&self.proba(sample, 1), &self.classes_map)[0]
     }
 
-    /// Predicts classes probabilities for each sample. The length of result vector is
-    /// number_of_samples * num_classes().
+    /// Predicts classes probabilities for each sample using `num_threads` threads. The length of
+    /// result vector is number_of_samples * num_classes().
     pub fn proba(&self, dataset: &[f32], num_threads: usize) -> Vec<f32> {
         let dataset = DatasetView::new(dataset, self.ensemble[0].num_features());
         let num_classes = self.classes_map.num_classes();

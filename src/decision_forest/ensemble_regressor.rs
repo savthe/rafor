@@ -73,8 +73,7 @@ impl ensemble_predictor::Predictor for TreeRegressorImpl {
 }
 
 impl Regressor {
-    /// Predicts regression values for a set of samples.
-    /// Dataset is a vector of floats with length multiple of num_features().
+    /// Predicts regression values for a set of samples using `num_threads` threads.
     pub fn predict(&self, dataset: &[f32], num_threads: usize) -> Vec<f32> {
         let view = DatasetView::new(dataset, self.ensemble[0].num_features());
         ensemble_predictor::predict(&self.ensemble, &view, 1, num_threads)
