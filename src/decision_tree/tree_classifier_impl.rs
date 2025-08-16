@@ -6,7 +6,7 @@ use super::{
 };
 use crate::{
     metrics::{self, WithClasses},
-    options::{Metric, TreeOptions},
+    config::{Metric, TreeConfig},
     ClassLabel, DatasetView, Weightable,
 };
 
@@ -71,7 +71,7 @@ impl TreeClassifierImpl {
     pub fn fit(
         ts: Trainset<ClassLabel>,
         num_classes: usize,
-        opts: &TreeOptions,
+        config: &TreeConfig,
     ) -> TreeClassifierImpl {
         let mut tr = TreeClassifierImpl {
             proba: Vec::new(),
@@ -79,10 +79,10 @@ impl TreeClassifierImpl {
             tree: DecisionTree::new(ts.num_features() as u16),
         };
 
-        match opts.metric {
+        match config.metric {
             Metric::GINI => Trainer::fit(
                 ts,
-                opts.clone(),
+                config.clone(),
                 &mut tr,
                 metrics::Gini::with_classes(num_classes),
             ),

@@ -15,7 +15,7 @@ fn main() {
     let predictor = Regressor::fit(
         &dataset,
         &targets,
-        Regressor::train_defaults()
+        Regressor::default_config()
             .with_max_depth(15)
             .with_trees(40)
             .with_threads(num_cpus::get())
