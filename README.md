@@ -1,11 +1,5 @@
 **Rafor** is a performance-oriented Random Forest and Decision Trees library.
 
-# Dataset
-The dataset is a single `f32` slice which is processed in chunks of `num_features` elements,
-each chunk is a single sample. During training, `num_features` is defined as 
-`dataset.len() / targets.len()`.
-Train will panic if `dataset.len()` is not divisible by `targets.len()`.
-
 # Classification
 Decision tree classifier (`rafor::dt::Classifier`) and random forest classifier
 (`rafor::rf::Classifier`) expect the labels to be `i64`. By default classifiers use Gini index for
@@ -62,6 +56,12 @@ expect the targets to be `f32`. By default regressors use MSE score for evaluati
 impurity.
 
 Regressor interface is mostly similar to `Classifier`, please see examples folder.
+
+# Dataset
+The dataset is a single `f32` slice which is processed in chunks of `num_features` elements,
+each chunk is a single sample. During training, `num_features` is defined as 
+`dataset.len() / targets.len()`.
+Train will panic if `dataset.len()` is not divisible by `targets.len()`.
 
 # Model serialization and deserialization
 All models support [serde](https://docs.rs/serde/latest/serde/), so any lib that supports `serde`
