@@ -16,12 +16,12 @@ use serde::{Deserialize, Serialize};
 /// let predictions = predictor.predict(&dataset, 1);
 /// println!("{:?}", predictions);
 /// ```
-#[derive(Default, Serialize, Deserialize)]
+#[derive(Default, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Regressor {
     ensemble: Vec<TreeRegressorImpl>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct RegressorConfig {
     train_config: TrainConfig,
     ensemble_config: EnsembleConfig,

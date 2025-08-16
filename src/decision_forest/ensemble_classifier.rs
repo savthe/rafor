@@ -16,13 +16,13 @@ use serde::{Deserialize, Serialize};
 /// let predictions = predictor.predict(&dataset, 1);
 /// assert_eq!(&predictions, &[1, 5, 1]);
 /// ```
-#[derive(Default, Clone, Serialize, Deserialize)]
+#[derive(Default, Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub struct Classifier {
     ensemble: Vec<TreeClassifierImpl>,
     classes_map: ClassesMapping,
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct ClassifierConfig {
     train_config: TrainConfig,
     ensemble_config: EnsembleConfig,

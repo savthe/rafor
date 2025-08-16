@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Default, Clone, Serialize, Deserialize)]
+#[derive(Default, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Node<T> {
     value: T,
     threshold: f32,
@@ -9,7 +9,7 @@ pub struct Node<T> {
     right: usize,
 }
 
-#[derive(Default, Clone, Serialize, Deserialize)]
+#[derive(Default, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct DecisionTree<T: Default + Copy> {
     tree: Vec<Node<T>>,
     num_features: usize,

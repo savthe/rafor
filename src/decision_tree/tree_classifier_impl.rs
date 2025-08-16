@@ -10,7 +10,7 @@ use crate::{
     ClassLabel, DatasetView, Weightable,
 };
 
-#[derive(Default, Clone, Serialize, Deserialize)]
+#[derive(Default, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct TreeClassifierImpl {
     proba: Vec<f32>,
     num_classes: usize,

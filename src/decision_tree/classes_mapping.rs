@@ -2,7 +2,7 @@ use crate::ClassLabel;
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeSet, HashMap};
 
-#[derive(Default, Clone, Serialize, Deserialize)]
+#[derive(Default, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct ClassesMapping {
     decode_table: Vec<i64>,
 }

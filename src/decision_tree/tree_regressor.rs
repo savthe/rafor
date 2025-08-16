@@ -4,6 +4,8 @@ use crate::config::{Metric, NumFeatures, TrainConfig};
 use crate::config_builders::*;
 use crate::{Dataset, DatasetView};
 
+use serde::{Deserialize, Serialize};
+
 /// A regression tree.
 /// # Example
 /// ```
@@ -13,11 +15,12 @@ use crate::{Dataset, DatasetView};
 /// let predictions = predictor.predict(&dataset);
 /// println!("Predictions: {:?}", predictions);
 /// ```
-#[derive(Default)]
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Regressor {
     regressor: TreeRegressorImpl,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RegressorConfig {
     config: TrainConfig,
 }

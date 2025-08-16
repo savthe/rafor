@@ -1,15 +1,16 @@
 //! Configurations for training.
-///
+use serde::{Deserialize, Serialize};
+
 /// Defines a split impurit metric. Currently only 2 metrics supported: Gini index for
 /// classification trees and MSE for regression trees.
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Metric {
     GINI,
     MSE,
 }
 
 /// Configuration for training a decision tree.
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct TrainConfig {
     /// Max depth of a tree.
     pub max_depth: usize,
@@ -32,7 +33,7 @@ pub struct TrainConfig {
 }
 
 /// Configuration for training the ensembles of trees.
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct EnsembleConfig {
     /// Number of decision trees in ensemble.
     pub num_trees: usize,
@@ -43,7 +44,7 @@ pub struct EnsembleConfig {
 }
 
 /// Defines the limiting strategy for a number of features that are selected at each split.
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub enum NumFeatures {
     /// Takes `sqrt(total_features)`.
     SQRT,
