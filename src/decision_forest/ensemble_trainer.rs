@@ -1,6 +1,6 @@
 use crate::{
     decision_tree::Trainset,
-    options::EnsembleOptions,
+    config::EnsembleConfig,
     weight::{Weightable, TARGET_WEIGHT_BITS},
     DatasetView, LabelWeight,
 };
@@ -19,21 +19,22 @@ pub fn fit<Target, Trainee>(
     proto: Trainee,
     view: DatasetView,
     targets: &[Target],
-    opts: &EnsembleOptions,
+    config: &EnsembleConfig,
 ) -> Vec<Trainee>
 where
     Target: Weightable + Copy + Sync + Send,
     Trainee: Trainable<Target> + Clone + Send + Sync,
 {
-    let mut rng = SmallRng::seed_from_u64(opts.seed);
-    let seeds: Vec<u64> = (0..opts.num_trees).map(|_| rng.random()).collect();
+    assert!(config.num_threads > 0);
+    let mut rng = SmallRng::seed_from_u64(config.seed);
+    let seeds: Vec<u64> = (0..config.num_trees).map(|_| rng.random()).collect();
 
-    let num_trees = opts.num_trees;
+    let num_trees = config.num_trees;
     let tree_idx = Arc::new(AtomicUsize::new(0));
     let mut ensemble: Vec<Trainee> = Vec::new();
     thread::scope(|s| {
         let mut handles = Vec::new();
-        for _ in 0..opts.num_threads {
+        for _ in 0..config.num_threads {
             let handle = s.spawn(|| {
                 let mut trainees: Vec<Trainee> = Vec::new();
                 let mut id = 0;

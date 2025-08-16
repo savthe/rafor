@@ -1,7 +1,8 @@
 use super::{ensemble_predictor, ensemble_trainer};
 use crate::{
+    config::*,
+    config_builders::*,
     decision_tree::{classify, ClassDecode, ClassesMapping, Trainset, TreeClassifierImpl},
-    options::*,
     ClassLabel, Dataset, DatasetView,
 };
 use serde::{Deserialize, Serialize};
@@ -13,22 +14,40 @@ pub struct Classifier {
 }
 
 #[derive(Clone)]
-pub struct TrainOptions {
-    tree_opts: TreeOptions,
-    ensemble_opts: EnsembleOptions,
+pub struct ClassifierConfig {
+    tree_config: TreeConfig,
+    ensemble_config: EnsembleConfig,
+}
+
+impl Default for ClassifierConfig {
+    fn default() -> Self {
+        Self {
+            tree_config: TreeConfig {
+                max_depth: usize::MAX,
+                max_features: NumFeatures::SQRT,
+                seed: 42,
+                metric: Metric::GINI,
+            },
+            ensemble_config: EnsembleConfig {
+                num_trees: 100,
+                num_threads: 1,
+                seed: 42,
+            },
+        }
+    }
 }
 
 #[derive(Clone)]
 struct Trainee {
     tree: TreeClassifierImpl,
     num_classes: usize,
-    tree_opts: TreeOptions,
+    tree_config: TreeConfig,
 }
 
 impl ensemble_trainer::Trainable<ClassLabel> for Trainee {
     fn fit(&mut self, ts: Trainset<ClassLabel>, seed: u64) {
-        self.tree_opts.seed = seed;
-        self.tree = TreeClassifierImpl::fit(ts, self.num_classes, &self.tree_opts);
+        self.tree_config.seed = seed;
+        self.tree = TreeClassifierImpl::fit(ts, self.num_classes, &self.tree_config);
     }
 }
 
@@ -44,7 +63,7 @@ impl ensemble_predictor::Predictor for TreeClassifierImpl {
 /// ```
 /// let dataset = [0.7, 0.0, 0.8, 1.0, 0.7, 0.0];
 /// let targets = [1, 5, 1];
-/// let predictor = rf::Classifier::fit(&dataset, &targets, &rf::Classifier::train_defaults());
+/// let predictor = rf::Classifier::fit(&dataset, &targets, &rf::Classifier::default_config());
 /// let predictions = predictor.predict(&dataset, 1);
 /// assert_eq!(&predictions, &[1, 5, 1]);
 /// ```
@@ -75,7 +94,7 @@ impl Classifier {
 
     /// Trains a classifier random forest with dataset given by a slice of length divisible by
     /// targets.len().
-    pub fn fit(data: &[f32], labels: &[i64], opts: &TrainOptions) -> Classifier {
+    pub fn fit(data: &[f32], labels: &[i64], conf: &ClassifierConfig) -> Classifier {
         let ds = Dataset::with_transposed(data, labels.len());
 
         let mut classes_map = ClassesMapping::default();
@@ -84,10 +103,10 @@ impl Classifier {
         let proto = Trainee {
             tree: TreeClassifierImpl::default(),
             num_classes: classes_map.num_classes(),
-            tree_opts: opts.tree_opts.clone(),
+            tree_config: conf.tree_config.clone(),
         };
 
-        let ens = ensemble_trainer::fit(proto, ds.as_view(), &labels_enc, &opts.ensemble_opts);
+        let ens = ensemble_trainer::fit(proto, ds.as_view(), &labels_enc, &conf.ensemble_config);
 
         Classifier {
             ensemble: ens.into_iter().map(|t| t.tree).collect(),
@@ -95,21 +114,9 @@ impl Classifier {
         }
     }
 
-    /// Returns TrainOptions object filled with default values for training.
-    pub fn train_defaults() -> TrainOptions {
-        TrainOptions {
-            tree_opts: TreeOptions {
-                max_depth: usize::MAX,
-                max_features: NumFeatures::SQRT,
-                seed: 42,
-                metric: Metric::GINI,
-            },
-            ensemble_opts: EnsembleOptions {
-                num_trees: 100,
-                num_threads: 1,
-                seed: 42,
-            },
-        }
+    /// Returns training config filled with default values.
+    pub fn default_config() -> ClassifierConfig {
+        ClassifierConfig::default()
     }
 }
 
@@ -119,17 +126,17 @@ impl ClassDecode for Classifier {
     }
 }
 
-impl TreeOptionsProvider for TrainOptions {
-    fn tree_options(&mut self) -> &mut TreeOptions {
-        &mut self.tree_opts
+impl TreeConfigProvider for ClassifierConfig {
+    fn tree_config(&mut self) -> &mut TreeConfig {
+        &mut self.tree_config
     }
 }
 
-impl EnsembleOptionsProvider for TrainOptions {
-    fn ensemble_options(&mut self) -> &mut EnsembleOptions {
-        &mut self.ensemble_opts
+impl EnsembleConfigProvider for ClassifierConfig {
+    fn ensemble_config(&mut self) -> &mut EnsembleConfig {
+        &mut self.ensemble_config
     }
 }
 
-impl TreeOptionsBuilder for TrainOptions {}
-impl EnsembleOptionsBuilder for TrainOptions {}
+impl CommonConfigBuilder for ClassifierConfig {}
+impl EnsembleConfigBuilder for ClassifierConfig {}

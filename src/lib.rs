@@ -2,20 +2,21 @@ mod dataset;
 mod decision_forest;
 mod decision_tree;
 mod metrics;
-pub mod options;
+pub mod config;
 mod utils;
 mod weight;
 use dataset::{Dataset, DatasetView};
 use weight::Weightable;
+mod config_builders;
 
 type IndexRange = std::ops::Range<usize>;
 type ClassLabel = u32;
 type LabelWeight = u32;
 
 pub mod prelude {
-    pub use super::options::{
-        ClassifierOptionsBuilder, EnsembleOptionsBuilder, RegressorOptionsBuilder,
-        TreeOptionsBuilder,
+    pub use crate::config_builders::{
+        ClassifierConfigBuilder, EnsembleConfigBuilder, RegressorConfigBuilder,
+        CommonConfigBuilder,
     };
     pub use crate::decision_tree::ClassDecode;
 }
@@ -29,3 +30,4 @@ pub mod rf {
     pub use crate::decision_forest::ensemble_classifier::Classifier;
     pub use crate::decision_forest::ensemble_regressor::Regressor;
 }
+

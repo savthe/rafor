@@ -1,7 +1,7 @@
 use super::Trainset;
 use crate::{
     metrics::ImpurityMetric,
-    options::{NumFeatures, TreeOptions},
+    config::{NumFeatures, TreeConfig},
     IndexRange, Weightable,
 };
 use radsort;
@@ -31,7 +31,7 @@ where
     features_perm: Vec<usize>,
     max_features: usize,
     rng: Option<SmallRng>,
-    opts: TreeOptions,
+    conf: TreeConfig,
     trainset: Trainset<'a, T>,
 }
 
@@ -42,7 +42,7 @@ where
 {
     pub fn fit<Trainee>(
         trainset: Trainset<T>,
-        opts: TreeOptions,
+        conf: TreeConfig,
         trainee: &mut Trainee,
         impurity_proto: I,
     ) where
@@ -50,7 +50,7 @@ where
         I: ImpurityMetric<T> + Clone,
         Trainee: Trainable<T>,
     {
-        let max_features = match opts.max_features {
+        let max_features = match conf.max_features {
             NumFeatures::SQRT => (trainset.num_features() as f32).sqrt() as usize,
             NumFeatures::LOG => (trainset.num_features() as f32).log2() as usize,
             NumFeatures::NUMBER(n) => n,
@@ -58,7 +58,7 @@ where
 
         let mut rng = None;
         if max_features < trainset.num_features() {
-            rng = Some(SmallRng::seed_from_u64(opts.seed))
+            rng = Some(SmallRng::seed_from_u64(conf.seed))
         }
 
         let features_perm: Vec<usize> = (0..trainset.num_features()).collect();
@@ -68,7 +68,7 @@ where
             max_features,
             rng,
             features_perm,
-            opts,
+            conf,
             trainset,
         };
 
@@ -87,13 +87,13 @@ where
                 let (left_node, right_node) =
                     trainee.split_node(node, split.feature as u16, split.threshold);
 
-                if depth + 1 == self.opts.max_depth || split.left_impurity == 0. {
+                if depth + 1 == self.conf.max_depth || split.left_impurity == 0. {
                     trainee.handle_leaf(left_node, self.targets(&left_range));
                 } else {
                     stack.push((left_node, left_range, depth + 1));
                 }
 
-                if depth + 1 == self.opts.max_depth || split.right_impurity == 0. {
+                if depth + 1 == self.conf.max_depth || split.right_impurity == 0. {
                     trainee.handle_leaf(right_node, self.targets(&right_range));
                 } else {
                     stack.push((right_node, right_range, depth + 1));

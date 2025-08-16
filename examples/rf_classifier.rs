@@ -12,7 +12,7 @@ fn main() {
         0.4, 2.1
     ];
     let targets = [1, 5, 1, -15, 5];
-    let options = Classifier::train_defaults()
+    let options = Classifier::default_config()
         .with_max_depth(15)
         .with_trees(40)
         .with_threads(num_cpus::get())

@@ -4,7 +4,7 @@ use super::{
 };
 use crate::{
     metrics::Mse,
-    options::{Metric, TreeOptions},
+    config::{Metric, TreeConfig},
     DatasetView, LabelWeight,
 };
 use serde::{Deserialize, Serialize};
@@ -45,13 +45,13 @@ impl TreeRegressorImpl {
         self.tree.predict(sample).0
     }
 
-    pub fn fit(trainset: Trainset<f32>, opts: &TreeOptions) -> TreeRegressorImpl {
+    pub fn fit(trainset: Trainset<f32>, config: &TreeConfig) -> TreeRegressorImpl {
         let mut tr = TreeRegressorImpl {
             tree: DecisionTree::new(trainset.num_features() as u16),
         };
 
-        match opts.metric {
-            Metric::MSE => Trainer::fit(trainset, opts.clone(), &mut tr, Mse::default()),
+        match config.metric {
+            Metric::MSE => Trainer::fit(trainset, config.clone(), &mut tr, Mse::default()),
             _ => panic!("Metric is not supported for regressor tree"),
         };
 

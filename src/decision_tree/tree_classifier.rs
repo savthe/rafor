@@ -1,9 +1,7 @@
-use super::{classify, ClassesMapping, ClassDecode, Trainset, TreeClassifierImpl};
+use super::{classify, ClassDecode, ClassesMapping, Trainset, TreeClassifierImpl};
 use crate::{
-    options::{
-        ClassifierOptionsBuilder, Metric, NumFeatures, TreeOptions, TreeOptionsBuilder,
-        TreeOptionsProvider,
-    },
+    config::{Metric, NumFeatures, TreeConfig},
+    config_builders::*,
     Dataset, DatasetView,
 };
 use serde::{Deserialize, Serialize};
@@ -14,18 +12,31 @@ pub struct Classifier {
     classes_map: ClassesMapping,
 }
 
-pub struct TrainOptions {
-    opts: TreeOptions,
+pub struct ClassifierConfig {
+    config: TreeConfig,
 }
 
-impl TreeOptionsProvider for TrainOptions {
-    fn tree_options(&mut self) -> &mut TreeOptions {
-        &mut self.opts
+impl Default for ClassifierConfig {
+    fn default() -> Self {
+        Self {
+            config: TreeConfig {
+                max_depth: usize::MAX,
+                max_features: NumFeatures::NUMBER(usize::MAX),
+                seed: 42,
+                metric: Metric::GINI,
+            },
+        }
     }
 }
 
-impl TreeOptionsBuilder for TrainOptions {}
-impl ClassifierOptionsBuilder for TrainOptions {}
+impl TreeConfigProvider for ClassifierConfig {
+    fn tree_config(&mut self) -> &mut TreeConfig {
+        &mut self.config
+    }
+}
+
+impl CommonConfigBuilder for ClassifierConfig {}
+impl ClassifierConfigBuilder for ClassifierConfig {}
 
 /// A classifier tree.
 /// # Examples
@@ -33,7 +44,7 @@ impl ClassifierOptionsBuilder for TrainOptions {}
 /// ```
 /// let dataset = [0.7, 0.0, 0.8, 1.0, 0.7, 0.0];
 /// let targets = [1, 5, 1];
-/// let predictor = dt::Classifier::fit(&dataset, &targets, &dt::Classifier::train_defaults());
+/// let predictor = dt::Classifier::fit(&dataset, &targets, &dt::Classifier::default_config());
 /// let predictions = predictor.predict(&dataset);
 /// assert_eq!(&predictions, &[1, 5, 1]);
 /// ```
@@ -57,7 +68,7 @@ impl Classifier {
     }
 
     /// Trains a classifier tree with dataset given by a slice of length divisible by targets.len().
-    pub fn fit(data: &[f32], labels: &[i64], opts: &TrainOptions) -> Self {
+    pub fn fit(data: &[f32], labels: &[i64], config: &ClassifierConfig) -> Self {
         let ds = Dataset::with_transposed(data, labels.len());
 
         let mut classes_map = ClassesMapping::default();
@@ -66,7 +77,11 @@ impl Classifier {
         let trainset = Trainset::from_dataset(ds.as_view(), &encoded_labels);
 
         Classifier {
-            classifier: TreeClassifierImpl::fit(trainset, classes_map.num_classes(), &opts.opts),
+            classifier: TreeClassifierImpl::fit(
+                trainset,
+                classes_map.num_classes(),
+                &config.config,
+            ),
             classes_map,
         }
     }
@@ -76,16 +91,9 @@ impl Classifier {
         self.classifier.num_features()
     }
 
-    // Returns TrainOptions object filled with default values for training.
-    pub fn train_defaults() -> TrainOptions {
-        TrainOptions {
-            opts: TreeOptions {
-                max_depth: usize::MAX,
-                max_features: NumFeatures::NUMBER(usize::MAX),
-                seed: 42,
-                metric: Metric::GINI,
-            },
-        }
+    /// Returns training config filled with default values.
+    pub fn default_config() -> ClassifierConfig {
+        ClassifierConfig::default()
     }
 }
 

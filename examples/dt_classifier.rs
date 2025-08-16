@@ -14,7 +14,7 @@ fn main() {
     let predictor = Classifier::fit(
         &dataset,
         &targets,
-        Classifier::train_defaults()
+        Classifier::default_config()
             .with_max_depth(15)
     );
 
