@@ -1,5 +1,5 @@
-use rafor::Regressor;
-use rafor::builders::*; // Required to use .with_option builders.
+use rafor::rf::Regressor;
+use rafor::prelude::*; // Required for .with_option builders.
 use num_cpus; // Requires num_cpus dependency in Cargo.toml
 
 fn main() {
@@ -15,7 +15,7 @@ fn main() {
     let predictor = Regressor::fit(
         &dataset,
         &targets,
-        &Regressor::train_defaults()
+        Regressor::train_defaults()
             .with_max_depth(15)
             .with_trees(40)
             .with_threads(num_cpus::get())
