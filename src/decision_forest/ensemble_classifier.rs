@@ -58,7 +58,7 @@ impl ensemble_predictor::Predictor for TreeClassifierImpl {
 }
 
 /// A random forest classifier.
-/// # Examples
+/// # Example
 ///
 /// ```
 /// let dataset = [0.7, 0.0, 0.8, 1.0, 0.7, 0.0];

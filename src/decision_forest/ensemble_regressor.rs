@@ -62,10 +62,9 @@ impl ensemble_predictor::Predictor for TreeRegressorImpl {
 }
 
 /// A random forest regressor.
-/// # Examples
+/// # Example
 ///
 /// ```
-/// // Note that we have two samples (0.7, 0.0) pointing to different values: [1.0, 0.2].
 /// let dataset = [0.7, 0.0, 0.8, 1.0, 0.7, 0.0];
 /// let targets = [1.0, 0.5, 0.2];
 /// let predictor = rf::Regressor::fit(&dataset, &targets, &rf::Regressor::default_config());
