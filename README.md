@@ -1,4 +1,4 @@
-**Rafor** is a performance-oriented Random Forest library.
+**Rafor** is a performance-oriented Random Forest and Decision Trees library.
 
 # Dataset
 The dataset is a single `f32` slice which is processed in chunks of `num_features` elements,
