@@ -4,6 +4,15 @@ use crate::config::{Metric, NumFeatures, TreeConfig};
 use crate::config_builders::*;
 use crate::{Dataset, DatasetView};
 
+/// A regression tree.
+/// # Example
+/// ```
+/// let dataset = [0.7, 0.0, 0.8, 1.0, 0.7, 0.0];
+/// let targets = [1.0, 0.5, 0.2];
+/// let predictor = dt::Regressor::fit(&dataset, &targets, &dt::Regressor::default_config());
+/// let predictions = predictor.predict(&dataset);
+/// println!("Predictions: {:?}", predictions);
+/// ```
 #[derive(Default)]
 pub struct Regressor {
     regressor: TreeRegressorImpl,
@@ -35,17 +44,6 @@ impl TreeConfigProvider for RegressorConfig {
 impl CommonConfigBuilder for RegressorConfig {}
 impl RegressorConfigBuilder for RegressorConfig {}
 
-/// A regression tree.
-/// # Examples
-///
-/// ```
-/// // Note that we have two samples (0.7, 0.0) pointing to different values: [1.0, 0.2].
-/// let dataset = [0.7, 0.0, 0.8, 1.0, 0.7, 0.0];
-/// let targets = [1.0, 0.5, 0.2];
-/// let predictor = dt::Regressor::fit(&dataset, &targets, &dt::Regressor::default_config());
-/// let predictions = predictor.predict(&dataset);
-/// println!("Predictions: {:?}", predictions);
-/// ```
 impl Regressor {
     /// Predicts regression values for a set of samples.
     /// Dataset is a vector of floats with length multiple of num_features().
@@ -69,7 +67,7 @@ impl Regressor {
         }
     }
 
-    // Returns a number of features for a trained tree.
+    /// Returns a number of features for a trained tree.
     pub fn num_features(&self) -> usize {
         self.regressor.num_features()
     }

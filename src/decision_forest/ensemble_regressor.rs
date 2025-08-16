@@ -4,6 +4,15 @@ use crate::{
 };
 use serde::{Deserialize, Serialize};
 
+/// A random forest regressor.
+/// # Example
+/// ```
+/// let dataset = [0.7, 0.0, 0.8, 1.0, 0.7, 0.0];
+/// let targets = [1.0, 0.5, 0.2];
+/// let predictor = rf::Regressor::fit(&dataset, &targets, &rf::Regressor::default_config());
+/// let predictions = predictor.predict(&dataset, 1);
+/// println!("{:?}", predictions);
+/// ```
 #[derive(Default, Serialize, Deserialize)]
 pub struct Regressor {
     ensemble: Vec<TreeRegressorImpl>,
@@ -61,16 +70,6 @@ impl ensemble_predictor::Predictor for TreeRegressorImpl {
     }
 }
 
-/// A random forest regressor.
-/// # Example
-///
-/// ```
-/// let dataset = [0.7, 0.0, 0.8, 1.0, 0.7, 0.0];
-/// let targets = [1.0, 0.5, 0.2];
-/// let predictor = rf::Regressor::fit(&dataset, &targets, &rf::Regressor::default_config());
-/// let predictions = predictor.predict(&dataset, 1);
-/// println!("Predictions: {:?}", predictions);
-/// ```
 impl Regressor {
     /// Predicts regression values for a set of samples.
     /// Dataset is a vector of floats with length multiple of num_features().
@@ -97,7 +96,7 @@ impl Regressor {
         }
     }
 
-    // Returns a number of features for a trained forest.
+    /// Returns a number of features for a trained forest.
     pub fn num_features(&self) -> usize {
         self.ensemble[0].num_features()
     }

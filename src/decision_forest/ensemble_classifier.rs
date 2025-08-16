@@ -7,6 +7,15 @@ use crate::{
 };
 use serde::{Deserialize, Serialize};
 
+/// A random forest classifier.
+/// # Example
+/// ```
+/// let dataset = [0.7, 0.0, 0.8, 1.0, 0.7, 0.0];
+/// let targets = [1, 5, 1];
+/// let predictor = rf::Classifier::fit(&dataset, &targets, &rf::Classifier::default_config());
+/// let predictions = predictor.predict(&dataset, 1);
+/// assert_eq!(&predictions, &[1, 5, 1]);
+/// ```
 #[derive(Default, Clone, Serialize, Deserialize)]
 pub struct Classifier {
     ensemble: Vec<TreeClassifierImpl>,
@@ -57,16 +66,6 @@ impl ensemble_predictor::Predictor for TreeClassifierImpl {
     }
 }
 
-/// A random forest classifier.
-/// # Example
-///
-/// ```
-/// let dataset = [0.7, 0.0, 0.8, 1.0, 0.7, 0.0];
-/// let targets = [1, 5, 1];
-/// let predictor = rf::Classifier::fit(&dataset, &targets, &rf::Classifier::default_config());
-/// let predictions = predictor.predict(&dataset, 1);
-/// assert_eq!(&predictions, &[1, 5, 1]);
-/// ```
 impl Classifier {
     /// Predicts classes for a set of samples.
     /// Dataset is a vector of floats with length multiple of num_features().
@@ -87,7 +86,7 @@ impl Classifier {
         ensemble_predictor::predict(&self.ensemble, &dataset, num_classes, num_threads)
     }
 
-    // Returns a number of features for a trained tree.
+    /// Returns a number of features for a trained tree.
     pub fn num_features(&self) -> usize {
         self.ensemble[0].num_features()
     }
