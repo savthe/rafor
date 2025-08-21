@@ -75,14 +75,13 @@ mod decision_forest;
 mod decision_tree;
 mod metrics;
 mod utils;
-mod weight;
+mod weightable;
 use dataset::{Dataset, DatasetView};
-use weight::Weightable;
+use weightable::{LabelWeight, Weightable, WEIGHT_MASK};
 mod config_builders;
 
 type IndexRange = std::ops::Range<usize>;
 type ClassLabel = u32;
-type LabelWeight = u32;
 
 pub mod prelude {
     pub use crate::config_builders::{
