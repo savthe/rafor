@@ -1,8 +1,8 @@
 use crate::{
     config::EnsembleConfig,
     decision_tree::Trainset,
-    weight::{Weightable, TARGET_WEIGHT_BITS},
     DatasetView, LabelWeight,
+    Weightable, WEIGHT_MASK
 };
 use rand::{rngs::SmallRng, Rng, SeedableRng};
 use std::{
@@ -65,12 +65,11 @@ where
 }
 
 fn bootstrap<T: Copy>(targets: &[T], rng: &mut SmallRng) -> (Vec<u32>, Vec<(T, LabelWeight)>) {
-    let weight_mask = (1 << TARGET_WEIGHT_BITS) - 1;
     let num_samples = targets.len();
     let mut weights: Vec<usize> = vec![0; num_samples];
     for _ in 0..num_samples {
         let i = rng.random_range(0..num_samples);
-        weights[i] = (weights[i] + 1) & weight_mask;
+        weights[i] += 1
     }
 
     let amount = weights.iter().filter(|x| **x > 0).count();
@@ -80,7 +79,7 @@ fn bootstrap<T: Copy>(targets: &[T], rng: &mut SmallRng) -> (Vec<u32>, Vec<(T, L
     for (i, &w) in weights.iter().enumerate() {
         if w > 0 {
             samples.push(i as u32);
-            weighted_targets.push((targets[i], w as LabelWeight));
+            weighted_targets.push((targets[i], (w as LabelWeight) & WEIGHT_MASK));
         }
     }
 
