@@ -2,7 +2,7 @@ use super::{tree_builder, DecisionTree, Trainset};
 use crate::{
     config::{Metric, TrainConfig},
     metrics::Mse,
-    DatasetView, LabelWeight, Weightable
+    DatasetView, FloatTarget, Weightable,
 };
 use serde::{Deserialize, Serialize};
 
@@ -12,7 +12,7 @@ pub struct TreeRegressorImpl {
 }
 
 impl TreeRegressorImpl {
-    pub fn predict(&self, dataset: &DatasetView) -> Vec<f32> {
+    pub fn predict(&self, dataset: &DatasetView) -> Vec<FloatTarget> {
         dataset.samples().map(|s| self.predict_one(s)).collect()
     }
 
@@ -20,11 +20,11 @@ impl TreeRegressorImpl {
         self.tree.num_features()
     }
 
-    pub fn predict_one(&self, sample: &[f32]) -> f32 {
+    pub fn predict_one(&self, sample: &[f32]) -> FloatTarget {
         self.tree.predict(sample).0
     }
 
-    pub fn fit(trainset: Trainset<f32>, config: &TrainConfig) -> TreeRegressorImpl {
+    pub fn fit(trainset: Trainset<FloatTarget>, config: &TrainConfig) -> TreeRegressorImpl {
         let mut tr = TreeRegressorImpl {
             tree: DecisionTree::new(trainset.num_features() as u16),
         };
@@ -40,7 +40,7 @@ impl TreeRegressorImpl {
             let targets = &targets[range.clone()];
             let mut s: f32 = 0.;
             let mut n = 0;
-            for (x, w) in targets.iter().map(|t| f32::unweight(t)) {
+            for (x, w) in targets.iter().map(|t| FloatTarget::unweight(t)) {
                 s += x * w as f32;
                 n += w;
             }

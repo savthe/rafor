@@ -4,7 +4,7 @@ use crate::{
     config::*,
     config_builders::*,
     decision_tree::{Trainset, TreeClassifierImpl},
-    ClassDecode, ClassLabel, ClassesMapping, Dataset, DatasetView,
+    ClassDecode, ClassTarget, ClassesMapping, Dataset, DatasetView,
 };
 use serde::{Deserialize, Serialize};
 
@@ -53,8 +53,8 @@ struct Trainee {
     conf: TrainConfig,
 }
 
-impl ensemble_trainer::Trainable<ClassLabel> for Trainee {
-    fn fit(&mut self, ts: Trainset<ClassLabel>, seed: u64) {
+impl ensemble_trainer::Trainable<ClassTarget> for Trainee {
+    fn fit(&mut self, ts: Trainset<ClassTarget>, seed: u64) {
         self.conf.seed = seed;
         self.tree = TreeClassifierImpl::fit(ts, self.num_classes, &self.conf);
     }

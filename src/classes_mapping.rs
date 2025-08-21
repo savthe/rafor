@@ -1,4 +1,4 @@
-use crate::ClassLabel;
+use crate::ClassTarget;
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeSet, HashMap};
 
@@ -8,7 +8,7 @@ pub struct ClassesMapping {
 }
 
 impl ClassesMapping {
-    pub fn with_encode(labels: &[i64]) -> (Self, Vec<ClassLabel>) {
+    pub fn with_encode(labels: &[i64]) -> (Self, Vec<ClassTarget>) {
         let mut m = Self {
             decode_table: Vec::new(),
         };
@@ -19,7 +19,7 @@ impl ClassesMapping {
             classes.iter().enumerate().map(|(i, &x)| (x, i)).collect();
         let encoded_labels = labels
             .iter()
-            .map(|v| *encode_table.get(v).unwrap() as ClassLabel)
+            .map(|v| *encode_table.get(v).unwrap() as ClassTarget)
             .collect();
         (m, encoded_labels)
     }

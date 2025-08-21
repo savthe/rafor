@@ -84,7 +84,8 @@ use weightable::{LabelWeight, Weightable, WEIGHT_MASK};
 mod config_builders;
 
 type IndexRange = std::ops::Range<usize>;
-type ClassLabel = u32;
+pub type ClassTarget = u32;
+pub type FloatTarget = f32;
 
 pub mod prelude {
     pub use crate::classes_mapping::ClassDecode;
