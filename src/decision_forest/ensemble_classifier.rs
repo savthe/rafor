@@ -81,8 +81,7 @@ impl Classifier {
     /// result vector is number_of_samples * num_classes().
     pub fn proba(&self, dataset: &[f32], num_threads: usize) -> Vec<f32> {
         let dataset = DatasetView::new(dataset, self.ensemble[0].num_features());
-        let num_classes = self.classes_map.num_classes();
-        ensemble_predictor::predict(&self.ensemble, &dataset, num_classes, num_threads)
+        ensemble_predictor::predict(&self.ensemble, &dataset, num_threads)
     }
 
     /// Returns a number of features for a trained tree.

@@ -13,22 +13,20 @@ pub trait Predictor {
 pub fn predict<P: Predictor + Sync + Send>(
     predictors: &Vec<P>,
     dataset: &DatasetView,
-    sample_predict_size: usize,
     num_threads: usize,
 ) -> Vec<f32> {
-    let mut result = vec![0.; dataset.size() * sample_predict_size];
+    let mut result: Vec<f32> = Vec::new();
     if num_threads == 1 {
         for p in predictors.iter() {
             result.aggregate(&p.predict(&dataset));
         }
     } else {
         let task_id = Arc::new(AtomicUsize::new(0));
-        let result_len = result.len();
         thread::scope(|s| {
             let mut handles = Vec::new();
             for _ in 0..num_threads {
                 let handle = s.spawn(|| {
-                    let mut thread_result = vec![0.; result_len];
+                    let mut thread_result: Vec<f32> = Vec::new();
                     loop {
                         let id = task_id.fetch_add(1, Ordering::Relaxed);
                         if id < predictors.len() {
