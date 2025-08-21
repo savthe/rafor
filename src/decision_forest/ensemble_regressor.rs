@@ -76,13 +76,13 @@ impl Regressor {
     /// Predicts regression values for a set of samples using `num_threads` threads.
     pub fn predict(&self, dataset: &[f32], num_threads: usize) -> Vec<f32> {
         let view = DatasetView::new(dataset, self.ensemble[0].num_features());
-        ensemble_predictor::predict(&self.ensemble, &view, 1, num_threads)
+        ensemble_predictor::predict(&self.ensemble, &view, num_threads)
     }
 
     /// Predicts regression value for a single sample given by a slice of length num_features().
     pub fn predict_one(&self, sample: &[f32]) -> f32 {
         let view = DatasetView::new(sample, self.ensemble[0].num_features());
-        ensemble_predictor::predict(&self.ensemble, &view, 1, 1)[0]
+        ensemble_predictor::predict(&self.ensemble, &view, 1)[0]
     }
 
     /// Trains a random forest regressor with dataset given by a slice of length divisible by
