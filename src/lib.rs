@@ -74,7 +74,6 @@ mod dataset;
 mod decision_forest;
 mod decision_tree;
 mod metrics;
-mod utils;
 mod weightable;
 use dataset::{Dataset, DatasetView};
 use weightable::{LabelWeight, Weightable, WEIGHT_MASK};

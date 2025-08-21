@@ -4,7 +4,7 @@ use std::sync::{
 };
 use std::thread;
 
-use crate::{utils::Aggregate, DatasetView};
+use crate::DatasetView;
 
 pub trait Predictor {
     fn predict(&self, dataset: &DatasetView) -> Vec<f32>;
@@ -53,4 +53,22 @@ pub fn predict<P: Predictor + Sync + Send>(
     }
 
     result
+}
+
+pub trait Aggregate {
+    fn aggregate(&mut self, other: &Vec<f32>);
+}
+
+impl Aggregate for Vec<f32> {
+    fn aggregate(&mut self, other: &Vec<f32>) {
+        if self.is_empty() {
+            *self = other.clone();
+        }
+        else {
+            assert!(other.is_empty() || self.len() == other.len());
+            for (s, x) in self.iter_mut().zip(other.iter()) {
+                *s += *x;
+            }
+        }
+    }
 }
