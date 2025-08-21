@@ -4,7 +4,7 @@ use super::{tree_builder, DecisionTree};
 use crate::{
     config::{Metric, TrainConfig},
     metrics::{self, WithClasses},
-    ClassLabel, DatasetView, Weightable,
+    ClassTarget, DatasetView, Weightable
 };
 use super::Trainset;
 
@@ -12,7 +12,7 @@ use super::Trainset;
 pub struct TreeClassifierImpl {
     proba: Vec<f32>,
     num_classes: usize,
-    tree: DecisionTree<ClassLabel>,
+    tree: DecisionTree<ClassTarget>,
 }
 
 impl TreeClassifierImpl {
@@ -40,7 +40,7 @@ impl TreeClassifierImpl {
     }
 
     pub fn fit(
-        ts: Trainset<ClassLabel>,
+        ts: Trainset<ClassTarget>,
         num_classes: usize,
         config: &TrainConfig,
     ) -> TreeClassifierImpl {
@@ -54,7 +54,7 @@ impl TreeClassifierImpl {
         tr
     }
 
-    fn fit_internal(&mut self, ts: Trainset<ClassLabel>, config: &TrainConfig) {
+    fn fit_internal(&mut self, ts: Trainset<ClassTarget>, config: &TrainConfig) {
         let (ranges, targets) = match config.metric {
             Metric::GINI => tree_builder::build(
                 ts,
@@ -71,7 +71,7 @@ impl TreeClassifierImpl {
             let targets = &targets[range.clone()];
 
             let mut count = 0;
-            for (x, w) in targets.iter().map(|t| ClassLabel::unweight(t)) {
+            for (x, w) in targets.iter().map(|t| ClassTarget::unweight(t)) {
                 //let (x, w) = u32::unweight(t);
                 bins[x as usize] += w as f32;
                 count += w;

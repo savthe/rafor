@@ -3,7 +3,7 @@ use crate::{
     config::*,
     config_builders::*,
     decision_tree::{Trainset, TreeRegressorImpl},
-    Dataset, DatasetView,
+    Dataset, DatasetView, FloatTarget
 };
 use serde::{Deserialize, Serialize};
 
@@ -67,27 +67,27 @@ impl ensemble_trainer::Trainable<f32> for Trainee {
 }
 
 impl ensemble_predictor::Predictor for TreeRegressorImpl {
-    fn predict(&self, dataset: &DatasetView) -> Vec<f32> {
+    fn predict(&self, dataset: &DatasetView) -> Vec<FloatTarget> {
         self.predict(dataset)
     }
 }
 
 impl Regressor {
     /// Predicts regression values for a set of samples using `num_threads` threads.
-    pub fn predict(&self, dataset: &[f32], num_threads: usize) -> Vec<f32> {
+    pub fn predict(&self, dataset: &[f32], num_threads: usize) -> Vec<FloatTarget> {
         let view = DatasetView::new(dataset, self.ensemble[0].num_features());
         ensemble_predictor::predict(&self.ensemble, &view, num_threads)
     }
 
     /// Predicts regression value for a single sample given by a slice of length num_features().
-    pub fn predict_one(&self, sample: &[f32]) -> f32 {
+    pub fn predict_one(&self, sample: &[f32]) -> FloatTarget {
         let view = DatasetView::new(sample, self.ensemble[0].num_features());
         ensemble_predictor::predict(&self.ensemble, &view, 1)[0]
     }
 
     /// Trains a random forest regressor with dataset given by a slice of length divisible by
     /// targets.len().
-    pub fn fit(data: &[f32], targets: &[f32], config: &RegressorConfig) -> Regressor {
+    pub fn fit(data: &[f32], targets: &[FloatTarget], config: &RegressorConfig) -> Regressor {
         let ds = Dataset::with_transposed(data, targets.len());
         let trainee = Trainee::new(config.train_config.clone());
         let ens = ensemble_trainer::fit(

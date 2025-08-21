@@ -2,7 +2,7 @@ use super::Trainset;
 use super::TreeRegressorImpl;
 use crate::config::{Metric, NumFeatures, TrainConfig};
 use crate::config_builders::*;
-use crate::{Dataset, DatasetView};
+use crate::{Dataset, DatasetView, FloatTarget};
 
 use serde::{Deserialize, Serialize};
 
@@ -50,18 +50,18 @@ impl RegressorConfigBuilder for RegressorConfig {}
 impl Regressor {
     /// Predicts regression values for a set of samples.
     /// Dataset is a vector of floats with length multiple of num_features().
-    pub fn predict(&self, dataset: &[f32]) -> Vec<f32> {
+    pub fn predict(&self, dataset: &[f32]) -> Vec<FloatTarget> {
         let view = DatasetView::new(dataset, self.regressor.num_features());
         self.regressor.predict(&view)
     }
 
     /// Predicts regression value for a single sample given by a slice of length num_features().
-    pub fn predict_one(&self, sample: &[f32]) -> f32 {
+    pub fn predict_one(&self, sample: &[f32]) -> FloatTarget {
         self.regressor.predict_one(sample)
     }
 
     /// Trains a regression tree with dataset given by a slice of length divisible by targets.len().
-    pub fn fit(dataset: &[f32], targets: &[f32], config: &RegressorConfig) -> Self {
+    pub fn fit(dataset: &[f32], targets: &[FloatTarget], config: &RegressorConfig) -> Self {
         let ds = Dataset::with_transposed(dataset, targets.len());
         let trainset = Trainset::from_dataset(ds.as_view(), targets);
 

@@ -1,4 +1,4 @@
-use crate::{ClassLabel, LabelWeight};
+use crate::{ClassTarget, LabelWeight};
 
 #[derive(Default, Clone, Debug)]
 pub struct Gini {
@@ -25,9 +25,9 @@ pub trait WithClasses {
     fn with_classes(num_classes: usize) -> Self;
 }
 
-impl ImpurityMetric<ClassLabel> for Gini {
+impl ImpurityMetric<ClassTarget> for Gini {
     #[inline(always)]
-    fn push(&mut self, bin_index: ClassLabel, weight: LabelWeight) {
+    fn push(&mut self, bin_index: ClassTarget, weight: LabelWeight) {
         let weight = weight as u64;
         self.sum_squares += weight * (2 * self.bins[bin_index as usize] + weight);
         self.bins[bin_index as usize] += weight;
@@ -35,7 +35,7 @@ impl ImpurityMetric<ClassLabel> for Gini {
     }
 
     #[inline(always)]
-    fn pop(&mut self, bin_index: ClassLabel, weight: LabelWeight) {
+    fn pop(&mut self, bin_index: ClassTarget, weight: LabelWeight) {
         let weight = weight as u64;
         self.sum_squares =
             self.sum_squares + weight * weight - 2 * self.bins[bin_index as usize] * weight;
