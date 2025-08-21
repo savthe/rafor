@@ -1,49 +1,18 @@
 use serde::{Deserialize, Serialize};
 
-use super::{
-    tree_trainer::{Trainable, Trainer},
-    DecisionTree, Trainset,
-};
+use super::{tree_builder, DecisionTree};
 use crate::{
     config::{Metric, TrainConfig},
     metrics::{self, WithClasses},
     ClassLabel, DatasetView, Weightable,
 };
+use super::Trainset;
 
 #[derive(Default, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct TreeClassifierImpl {
     proba: Vec<f32>,
     num_classes: usize,
     tree: DecisionTree<ClassLabel>,
-}
-
-impl Trainable<ClassLabel> for TreeClassifierImpl {
-    fn split_node(&mut self, node: usize, feature: u16, threshold: f32) -> (usize, usize) {
-        self.tree.set_node(node, feature, threshold, 0);
-        self.tree.split_node(node)
-    }
-
-    //TODO(sav). Weightables are not fully implemented. Consider hiding them into tree trainer.
-    //TODO(sav). Actually we dotn't need trainable trait. Tree trainer can return subsets
-    //of targets for created nodes. Caller will process them.
-    fn handle_leaf(&mut self, node: usize, targets: &[u32]) {
-        let offset = self.proba.len();
-        self.proba.resize(offset + self.num_classes, 0.);
-        let bins = &mut self.proba[offset..];
-
-        let mut count = 0;
-        for t in targets.iter() {
-            let (x, w) = u32::unweight(t);
-            bins[x as usize] += w as f32;
-            count += w;
-        }
-
-        for x in bins.iter_mut() {
-            *x /= count as f32;
-        }
-
-        self.tree.set_node(node, 0, 0., offset as ClassLabel);
-    }
 }
 
 impl TreeClassifierImpl {
@@ -59,12 +28,14 @@ impl TreeClassifierImpl {
         result
     }
 
+    #[inline(always)]
     pub fn num_features(&self) -> usize {
         self.tree.num_features()
     }
 
+    #[inline(always)]
     pub fn predict_one(&self, sample: &[f32]) -> &[f32] {
-        let i = self.tree.predict(sample).1 as usize;
+        let i = self.tree.predict(sample).1 as usize * self.num_classes;
         &self.proba[i..i + self.num_classes]
     }
 
@@ -79,16 +50,39 @@ impl TreeClassifierImpl {
             tree: DecisionTree::new(ts.num_features() as u16),
         };
 
-        match config.metric {
-            Metric::GINI => Trainer::fit(
+        tr.fit_internal(ts, config);
+        tr
+    }
+
+    fn fit_internal(&mut self, ts: Trainset<ClassLabel>, config: &TrainConfig) {
+        let (ranges, targets) = match config.metric {
+            Metric::GINI => tree_builder::build(
                 ts,
+                &mut self.tree,
                 config.clone(),
-                &mut tr,
-                metrics::Gini::with_classes(num_classes),
+                metrics::Gini::with_classes(self.num_classes),
             ),
             _ => panic!("Metric is not supported for classifier tree"),
         };
 
-        tr
+        self.proba.resize(self.num_classes * ranges.len(), 0.);
+        let mut offset = 0;
+        for ((node, range), bins) in ranges.iter().zip(self.proba.chunks_mut(self.num_classes)) {
+            let targets = &targets[range.clone()];
+
+            let mut count = 0;
+            for (x, w) in targets.iter().map(|t| ClassLabel::unweight(t)) {
+                //let (x, w) = u32::unweight(t);
+                bins[x as usize] += w as f32;
+                count += w;
+            }
+
+            for x in bins.iter_mut() {
+                *x /= count as f32;
+            }
+
+            self.tree.set_node_value(*node, offset);
+            offset += 1;
+        }
     }
 }
