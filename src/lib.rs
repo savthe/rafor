@@ -70,11 +70,15 @@
 //! }
 //! ```
 pub mod config;
+use argminmax::ArgMinMax;
+mod classes_mapping;
 mod dataset;
 mod decision_forest;
 mod decision_tree;
 mod metrics;
+use classes_mapping::{ClassDecode, ClassesMapping};
 mod weightable;
+
 use dataset::{Dataset, DatasetView};
 use weightable::{LabelWeight, Weightable, WEIGHT_MASK};
 mod config_builders;
@@ -83,10 +87,10 @@ type IndexRange = std::ops::Range<usize>;
 type ClassLabel = u32;
 
 pub mod prelude {
+    pub use crate::classes_mapping::ClassDecode;
     pub use crate::config_builders::{
         ClassifierConfigBuilder, CommonConfigBuilder, EnsembleConfigBuilder, RegressorConfigBuilder,
     };
-    pub use crate::decision_tree::ClassDecode;
 }
 
 pub mod dt {
@@ -99,4 +103,12 @@ pub mod rf {
     //! Random Forest implementation.
     pub use crate::decision_forest::ensemble_classifier::Classifier;
     pub use crate::decision_forest::ensemble_regressor::Regressor;
+}
+
+fn classify(proba: &[f32], mapping: &ClassesMapping) -> Vec<i64> {
+    assert!(proba.len() % mapping.num_classes() == 0);
+    proba
+        .chunks(mapping.num_classes())
+        .map(|c| mapping.decode(c.argmax()))
+        .collect()
 }

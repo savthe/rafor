@@ -1,9 +1,10 @@
 use super::{ensemble_predictor, ensemble_trainer};
 use crate::{
+    classify,
     config::*,
     config_builders::*,
-    decision_tree::{classify, ClassDecode, ClassesMapping, Trainset, TreeClassifierImpl},
-    ClassLabel, Dataset, DatasetView,
+    decision_tree::{Trainset, TreeClassifierImpl},
+    ClassDecode, ClassLabel, ClassesMapping, Dataset, DatasetView,
 };
 use serde::{Deserialize, Serialize};
 
@@ -94,8 +95,7 @@ impl Classifier {
     pub fn fit(data: &[f32], labels: &[i64], conf: &ClassifierConfig) -> Classifier {
         let ds = Dataset::with_transposed(data, labels.len());
 
-        let mut classes_map = ClassesMapping::default();
-        let labels_enc = classes_map.encode(labels);
+        let (classes_map, labels_enc) = ClassesMapping::with_encode(labels);
 
         let proto = Trainee {
             tree: TreeClassifierImpl::default(),

@@ -8,15 +8,20 @@ pub struct ClassesMapping {
 }
 
 impl ClassesMapping {
-    pub fn encode(&mut self, labels: &[i64]) -> Vec<ClassLabel> {
+    pub fn with_encode(labels: &[i64]) -> (Self, Vec<ClassLabel>) {
+        let mut m = Self {
+            decode_table: Vec::new(),
+        };
+
         let classes: BTreeSet<i64> = labels.iter().copied().collect();
-        self.decode_table = classes.iter().copied().collect();
+        m.decode_table = classes.iter().copied().collect();
         let encode_table: HashMap<i64, usize> =
             classes.iter().enumerate().map(|(i, &x)| (x, i)).collect();
-        labels
+        let encoded_labels = labels
             .iter()
             .map(|v| *encode_table.get(v).unwrap() as ClassLabel)
-            .collect()
+            .collect();
+        (m, encoded_labels)
     }
 }
 
@@ -25,17 +30,20 @@ pub trait ClassDecode {
     fn get_decode_table(&self) -> &[i64];
 
     /// Returns a number of classes stored int table.
+    #[inline(always)]
     fn num_classes(&self) -> usize {
         self.get_decode_table().len()
     }
 
     /// Decodes a usize value into i64 according to decode table.
+    #[inline(always)]
     fn decode(&self, class_enc: usize) -> i64 {
         self.get_decode_table()[class_enc]
     }
 }
 
 impl ClassDecode for ClassesMapping {
+    #[inline(always)]
     fn get_decode_table(&self) -> &[i64] {
         &self.decode_table
     }
