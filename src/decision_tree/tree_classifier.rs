@@ -1,9 +1,11 @@
-use super::{classify, ClassDecode, ClassesMapping, Trainset, TreeClassifierImpl};
+use super::{Trainset, TreeClassifierImpl};
 use crate::{
+    classify,
     config::{Metric, NumFeatures, TrainConfig},
     config_builders::*,
-    Dataset, DatasetView,
+    ClassDecode, ClassesMapping, Dataset, DatasetView,
 };
+use argminmax::ArgMinMax;
 use serde::{Deserialize, Serialize};
 
 /// A classifier tree.
@@ -57,7 +59,7 @@ impl Classifier {
 
     /// Predicts class for a single sample given by a slice of length num_features().
     pub fn predict_one(&self, sample: &[f32]) -> i64 {
-        classify(&self.proba(sample), &self.classes_map)[0]
+        self.classes_map.decode(self.proba(sample).argmax())
     }
 
     /// Predicts classes probabilities for each sample. The length of result vector is
@@ -71,8 +73,7 @@ impl Classifier {
     pub fn fit(data: &[f32], labels: &[i64], config: &ClassifierConfig) -> Self {
         let ds = Dataset::with_transposed(data, labels.len());
 
-        let mut classes_map = ClassesMapping::default();
-        let encoded_labels = classes_map.encode(labels);
+        let (classes_map, encoded_labels) = ClassesMapping::with_encode(labels);
 
         let trainset = Trainset::from_dataset(ds.as_view(), &encoded_labels);
 
