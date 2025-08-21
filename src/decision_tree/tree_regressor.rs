@@ -20,9 +20,18 @@ pub struct Regressor {
     regressor: TreeRegressorImpl,
 }
 
+/// Configuration for tree regressor. Default values:
+/// ```
+/// max_depth: usize::MAX,
+/// max_features: NumFeatures::NUMBER(usize::MAX),
+/// metric: Metric::MSE,
+/// seed: 42,
+/// min_samples_leaf: 1,
+/// min_samples_split: 2
+/// ```
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RegressorConfig {
-    config: TrainConfig,
+    pub config: TrainConfig,
 }
 
 impl Default for RegressorConfig {
@@ -33,6 +42,8 @@ impl Default for RegressorConfig {
                 max_features: NumFeatures::NUMBER(usize::MAX),
                 metric: Metric::MSE,
                 seed: 42,
+                min_samples_leaf: 1,
+                min_samples_split: 2
             },
         }
     }

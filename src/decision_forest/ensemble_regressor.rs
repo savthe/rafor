@@ -21,10 +21,21 @@ pub struct Regressor {
     ensemble: Vec<TreeRegressorImpl>,
 }
 
+/// Configuration for ensemble regressor. Default values:
+/// ```
+/// max_depth: usize::MAX,
+/// max_features: NumFeatures::NUMBER(usize::MAX),
+/// seed: 42,
+/// metric: Metric::MSE,
+/// min_samples_leaf: 1,
+/// min_samples_split: 2,
+/// num_trees: 100,
+/// num_threads: 1,
+/// ```
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct RegressorConfig {
-    train_config: TrainConfig,
-    ensemble_config: EnsembleConfig,
+    pub train_config: TrainConfig,
+    pub ensemble_config: EnsembleConfig,
 }
 
 impl Default for RegressorConfig {
@@ -32,9 +43,11 @@ impl Default for RegressorConfig {
         Self {
             train_config: TrainConfig {
                 max_depth: usize::MAX,
-                max_features: NumFeatures::SQRT,
+                max_features: NumFeatures::NUMBER(usize::MAX),
                 seed: 42,
                 metric: Metric::MSE,
+                min_samples_leaf: 1,
+                min_samples_split: 2
             },
             ensemble_config: EnsembleConfig {
                 num_trees: 100,
@@ -59,8 +72,8 @@ impl Trainee {
     }
 }
 
-impl ensemble_trainer::Trainable<f32> for Trainee {
-    fn fit(&mut self, ts: Trainset<f32>, seed: u64) {
+impl ensemble_trainer::Trainable<FloatTarget> for Trainee {
+    fn fit(&mut self, ts: Trainset<FloatTarget>, seed: u64) {
         self.train_config.seed = seed;
         self.tree = TreeRegressorImpl::fit(ts, &self.train_config);
     }

@@ -23,10 +23,21 @@ pub struct Classifier {
     classes_map: ClassesMapping,
 }
 
+/// Configuration for ensemble classifier. Default values:
+/// ```
+/// max_depth: usize::MAX,
+/// max_features: NumFeatures::SQRT,
+/// seed: 42,
+/// metric: Metric::GINI,
+/// min_samples_leaf: 1,
+/// min_samples_split: 2,
+/// num_trees: 100,
+/// num_threads: 1,
+///```
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct ClassifierConfig {
-    train_config: TrainConfig,
-    ensemble_config: EnsembleConfig,
+    pub train_config: TrainConfig,
+    pub ensemble_config: EnsembleConfig,
 }
 
 impl Default for ClassifierConfig {
@@ -37,6 +48,8 @@ impl Default for ClassifierConfig {
                 max_features: NumFeatures::SQRT,
                 seed: 42,
                 metric: Metric::GINI,
+                min_samples_leaf: 1,
+                min_samples_split: 2
             },
             ensemble_config: EnsembleConfig {
                 num_trees: 100,
