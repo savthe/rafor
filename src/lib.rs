@@ -69,23 +69,23 @@
 //!     }
 //! }
 //! ```
-pub mod config;
-use argminmax::ArgMinMax;
 mod classes_mapping;
+pub mod config;
 mod config_builders;
 mod dataset;
 mod decision_forest;
 mod decision_tree;
 mod metrics;
-use classes_mapping::{ClassDecode, ClassesMapping};
 mod weightable;
 
+use argminmax::ArgMinMax;
+use classes_mapping::{ClassDecode, ClassesMapping};
 use dataset::{Dataset, DatasetView};
 use weightable::{LabelWeight, Weightable, WEIGHT_MASK};
 
-type IndexRange = std::ops::Range<usize>;
 pub type ClassTarget = u32;
 pub type FloatTarget = f32;
+type IndexRange = std::ops::Range<usize>;
 
 pub mod prelude {
     pub use crate::classes_mapping::ClassDecode;

@@ -1,8 +1,6 @@
 use crate::{
-    config::EnsembleConfig,
-    decision_tree::Trainset,
-    DatasetView, LabelWeight,
-    Weightable, WEIGHT_MASK
+    config::EnsembleConfig, decision_tree::Trainset, DatasetView, LabelWeight, Weightable,
+    WEIGHT_MASK,
 };
 use rand::{rngs::SmallRng, Rng, SeedableRng};
 use std::{

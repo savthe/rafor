@@ -1,12 +1,12 @@
 use serde::{Deserialize, Serialize};
 
+use super::Trainset;
 use super::{tree_builder, DecisionTree};
 use crate::{
     config::{Metric, TrainConfig},
     metrics::{self, WithClasses},
-    ClassTarget, DatasetView, Weightable
+    ClassTarget, DatasetView, Weightable,
 };
-use super::Trainset;
 
 #[derive(Default, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct TreeClassifierImpl {

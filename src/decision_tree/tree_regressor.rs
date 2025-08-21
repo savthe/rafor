@@ -43,7 +43,7 @@ impl Default for RegressorConfig {
                 metric: Metric::MSE,
                 seed: 42,
                 min_samples_leaf: 1,
-                min_samples_split: 2
+                min_samples_split: 2,
             },
         }
     }

@@ -49,7 +49,7 @@ impl Default for ClassifierConfig {
                 seed: 42,
                 metric: Metric::GINI,
                 min_samples_leaf: 1,
-                min_samples_split: 2
+                min_samples_split: 2,
             },
             ensemble_config: EnsembleConfig {
                 num_trees: 100,

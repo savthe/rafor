@@ -3,7 +3,7 @@ use crate::{
     config::*,
     config_builders::*,
     decision_tree::{Trainset, TreeRegressorImpl},
-    Dataset, DatasetView, FloatTarget
+    Dataset, DatasetView, FloatTarget,
 };
 use serde::{Deserialize, Serialize};
 
@@ -47,7 +47,7 @@ impl Default for RegressorConfig {
                 seed: 42,
                 metric: Metric::MSE,
                 min_samples_leaf: 1,
-                min_samples_split: 2
+                min_samples_split: 2,
             },
             ensemble_config: EnsembleConfig {
                 num_trees: 100,
