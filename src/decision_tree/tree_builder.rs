@@ -84,7 +84,10 @@ where
         let mut ranges: Vec<(usize, IndexRange)> = Vec::new();
         while let Some((node, range, depth)) = stack.pop() {
             let mut split = SplitDescriptor::default();
-            if depth < self.conf.max_depth {
+            if depth < self.conf.max_depth
+                && range.len() >= self.conf.min_samples_split
+                && range.len() >= 2 * self.conf.min_samples_leaf
+            {
                 let imp_range = self.compute_impurity(self.trainset.targets(&range));
                 if imp_range.impurity() > 0. {
                     split = self.find_best_split(&range, &imp_range);
@@ -119,13 +122,16 @@ where
             let mut imp_left = self.impurity_proto.clone();
             let mut imp_right = imp_range.clone();
 
-            for i in 0..ordered_samples.len() - 1 {
+            for i in 0..ordered_samples.len() - self.conf.min_samples_leaf {
                 let (value, t) = ordered_samples[i];
                 let next = ordered_samples[i + 1].0;
                 let (label, weight) = T::unweight(&t);
                 imp_left.push(label, weight);
                 imp_right.pop(label, weight);
-                if value < next && imp_left.split_impurity(&imp_right) < best_impurity {
+                if value < next
+                    && i + 1 >= self.conf.min_samples_leaf
+                    && imp_left.split_impurity(&imp_right) < best_impurity
+                {
                     best_impurity = imp_left.split_impurity(&imp_right);
                     split.pivot = range.start + i + 1;
                     split.feature = feature;

@@ -30,6 +30,12 @@ pub struct TrainConfig {
     /// **Note**. If trainer couldn't find a splitting value in `num_features` features, it will consider
     /// additional features.
     pub max_features: NumFeatures,
+
+    /// Minimal number of samples in the node that can be splitted.
+    pub min_samples_split: usize,
+
+    /// Forces leaves to have at least min_samples_leaf samples.
+    pub min_samples_leaf: usize,
 }
 
 /// Configuration for training the ensembles of trees.

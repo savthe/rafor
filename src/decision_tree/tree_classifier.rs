@@ -23,9 +23,18 @@ pub struct Classifier {
     classes_map: ClassesMapping,
 }
 
+/// A training configuration for tree classifier. Default values:
+/// ```
+/// max_depth: usize::MAX,
+/// max_features: NumFeatures::NUMBER(usize::MAX),
+/// seed: 42,
+/// metric: Metric::GINI,
+/// min_samples_leaf: 1,
+/// min_samples_split: 2
+/// ```
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct ClassifierConfig {
-    config: TrainConfig,
+    pub config: TrainConfig,
 }
 
 impl Default for ClassifierConfig {
@@ -36,6 +45,8 @@ impl Default for ClassifierConfig {
                 max_features: NumFeatures::NUMBER(usize::MAX),
                 seed: 42,
                 metric: Metric::GINI,
+                min_samples_leaf: 1,
+                min_samples_split: 2
             },
         }
     }
