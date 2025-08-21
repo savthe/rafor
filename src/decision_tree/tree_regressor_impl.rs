@@ -1,35 +1,14 @@
-use super::{
-    tree_trainer::{Trainable, Trainer},
-    DecisionTree, Trainset,
-};
+use super::{tree_builder, DecisionTree, Trainset};
 use crate::{
     config::{Metric, TrainConfig},
     metrics::Mse,
-    DatasetView, LabelWeight,
+    DatasetView, LabelWeight, Weightable
 };
 use serde::{Deserialize, Serialize};
 
 #[derive(Default, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct TreeRegressorImpl {
     tree: DecisionTree<()>,
-}
-
-impl Trainable<f32> for TreeRegressorImpl {
-    fn split_node(&mut self, node: usize, feature: u16, threshold: f32) -> (usize, usize) {
-        self.tree.set_node(node, feature, threshold, ());
-        self.tree.split_node(node)
-    }
-
-    fn handle_leaf(&mut self, node: usize, targets: &[(f32, LabelWeight)]) {
-        let mut s: f32 = 0.;
-        let mut n = 0;
-        for &(x, w) in targets.iter() {
-            s += x * w as f32;
-            n += w;
-        }
-
-        self.tree.set_node(node, 0, s / n as f32, ());
-    }
 }
 
 impl TreeRegressorImpl {
@@ -50,10 +29,23 @@ impl TreeRegressorImpl {
             tree: DecisionTree::new(trainset.num_features() as u16),
         };
 
-        match config.metric {
-            Metric::MSE => Trainer::fit(trainset, config.clone(), &mut tr, Mse::default()),
+        let (ranges, targets) = match config.metric {
+            Metric::MSE => {
+                tree_builder::build(trainset, &mut tr.tree, config.clone(), Mse::default())
+            }
             _ => panic!("Metric is not supported for regressor tree"),
         };
+
+        for (node, range) in ranges.iter() {
+            let targets = &targets[range.clone()];
+            let mut s: f32 = 0.;
+            let mut n = 0;
+            for (x, w) in targets.iter().map(|t| f32::unweight(t)) {
+                s += x * w as f32;
+                n += w;
+            }
+            tr.tree.set_node_threshold(*node, s / n as f32);
+        }
 
         tr
     }

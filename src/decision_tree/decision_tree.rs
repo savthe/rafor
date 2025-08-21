@@ -1,5 +1,9 @@
 use serde::{Deserialize, Serialize};
 
+pub trait Splittable {
+    fn split(&mut self, node: usize, feature: u16, threshold: f32) -> (usize, usize);
+}
+
 #[derive(Default, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Node<T> {
     value: T,
@@ -23,30 +27,17 @@ impl<T: Default + Copy> DecisionTree<T> {
         }
     }
 
+    #[inline(always)]
     pub fn num_features(&self) -> usize {
         self.num_features
     }
 
-    pub fn set_node(&mut self, node: usize, feature: u16, threshold: f32, value: T) {
+    pub fn set_node_value(&mut self, node: usize, value: T) {
         self.tree[node].value = value;
-        self.tree[node].feature = feature;
-        self.tree[node].threshold = threshold;
     }
 
-    pub fn split_node(&mut self, index: usize) -> (usize, usize) {
-        if !self.is_leaf(index) {
-            panic!("Can't split non-leaf node")
-        }
-
-        let left = self.tree.len();
-        let right = self.tree.len() + 1;
-        self.tree.push(Node::default());
-        self.tree.push(Node::default());
-
-        let node = &mut self.tree[index];
-        node.left = left;
-        node.right = right;
-        (left, right)
+    pub fn set_node_threshold(&mut self, node: usize, threshold: f32) {
+        self.tree[node].threshold = threshold;
     }
 
     pub fn is_leaf(&self, index: usize) -> bool {
@@ -64,5 +55,25 @@ impl<T: Default + Copy> DecisionTree<T> {
             }
         }
         (self.tree[id].threshold, self.tree[id].value)
+    }
+}
+
+impl<T: Default + Copy> Splittable for DecisionTree<T> {
+    fn split(&mut self, index: usize, feature: u16, threshold: f32) -> (usize, usize) {
+        if !self.is_leaf(index) {
+            panic!("Can't split non-leaf node")
+        }
+        self.tree[index].feature = feature;
+        self.tree[index].threshold = threshold;
+
+        let left = self.tree.len();
+        let right = self.tree.len() + 1;
+        self.tree.push(Node::default());
+        self.tree.push(Node::default());
+
+        let node = &mut self.tree[index];
+        node.left = left;
+        node.right = right;
+        (left, right)
     }
 }
