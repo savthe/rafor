@@ -72,6 +72,7 @@
 pub mod config;
 use argminmax::ArgMinMax;
 mod classes_mapping;
+mod config_builders;
 mod dataset;
 mod decision_forest;
 mod decision_tree;
@@ -81,7 +82,6 @@ mod weightable;
 
 use dataset::{Dataset, DatasetView};
 use weightable::{LabelWeight, Weightable, WEIGHT_MASK};
-mod config_builders;
 
 type IndexRange = std::ops::Range<usize>;
 pub type ClassTarget = u32;
@@ -96,14 +96,14 @@ pub mod prelude {
 
 pub mod dt {
     //! Decision Tree implementation.
-    pub use super::decision_tree::tree_classifier::Classifier;
-    pub use super::decision_tree::tree_regressor::Regressor;
+    pub use super::decision_tree::tree_classifier::{Classifier, ClassifierConfig};
+    pub use super::decision_tree::tree_regressor::{Regressor, RegressorConfig};
 }
 
 pub mod rf {
     //! Random Forest implementation.
-    pub use crate::decision_forest::ensemble_classifier::Classifier;
-    pub use crate::decision_forest::ensemble_regressor::Regressor;
+    pub use crate::decision_forest::ensemble_classifier::{Classifier, ClassifierConfig};
+    pub use crate::decision_forest::ensemble_regressor::{Regressor, RegressorConfig};
 }
 
 fn classify(proba: &[f32], mapping: &ClassesMapping) -> Vec<i64> {
