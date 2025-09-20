@@ -9,16 +9,16 @@ pub struct Gini {
 
 #[derive(Default, Clone)]
 pub struct Mse {
-    sum: f32,
-    sum_squares: f32,
+    mean: f64,
+    sum_sq_diffs: f64,
     num_items: u64,
 }
 
 pub trait ImpurityMetric<Target> {
     fn push(&mut self, item: Target, weight: LabelWeight);
     fn pop(&mut self, item: Target, weight: LabelWeight);
-    fn impurity(&self) -> f32;
-    fn split_impurity(&self, other: &Self) -> f32;
+    fn impurity(&self) -> f64;
+    fn split_impurity(&self, other: &Self) -> f64;
 }
 
 pub trait WithClasses {
@@ -44,14 +44,14 @@ impl ImpurityMetric<ClassTarget> for Gini {
     }
 
     #[inline(always)]
-    fn impurity(&self) -> f32 {
-        1.0 - self.sum_squares as f32 / (self.num_items * self.num_items) as f32
+    fn impurity(&self) -> f64 {
+        1.0 - self.sum_squares as f64 / (self.num_items * self.num_items) as f64
     }
 
     #[inline(always)]
-    fn split_impurity(&self, other: &Self) -> f32 {
-        1.0 - (self.sum_squares * other.num_items + other.sum_squares * self.num_items) as f32
-            / (self.num_items * other.num_items * (self.num_items + other.num_items)) as f32
+    fn split_impurity(&self, other: &Self) -> f64 {
+        1.0 - (self.sum_squares * other.num_items + other.sum_squares * self.num_items) as f64
+            / (self.num_items * other.num_items * (self.num_items + other.num_items)) as f64
     }
 }
 
@@ -69,30 +69,33 @@ impl ImpurityMetric<f32> for Mse {
     #[inline(always)]
     fn push(&mut self, y: f32, weight: LabelWeight) {
         let weight = weight as u64;
-        self.sum += y * weight as f32;
-        self.sum_squares += y * y * weight as f32;
+        let y = y as f64;
+        let next_mean =
+            self.mean + weight as f64 * (y - self.mean) / (self.num_items + weight) as f64;
+        self.sum_sq_diffs += weight as f64 * (y - self.mean) * (y - next_mean);
+        self.mean = next_mean;
         self.num_items += weight;
     }
 
     #[inline(always)]
     fn pop(&mut self, y: f32, weight: LabelWeight) {
         let weight = weight as u64;
-        self.sum -= y * weight as f32;
-        self.sum_squares -= y * y * weight as f32;
+        let y = y as f64;
+
+        let next_mean =
+            y + self.num_items as f64 * (self.mean - y) / (self.num_items - weight) as f64;
+        self.sum_sq_diffs -= weight as f64 * (y - next_mean) * (y - self.mean);
+        self.mean = next_mean;
         self.num_items -= weight;
     }
 
     #[inline(always)]
-    fn impurity(&self) -> f32 {
-        let s = self.num_items as f32 * self.sum_squares - self.sum * self.sum;
-        s / (self.num_items * self.num_items) as f32
+    fn impurity(&self) -> f64 {
+        self.sum_sq_diffs / self.num_items as f64
     }
 
     #[inline(always)]
-    fn split_impurity(&self, other: &Self) -> f32 {
-        let d1 = self.num_items as f32 * self.sum_squares - self.sum * self.sum;
-        let d2 = other.num_items as f32 * other.sum_squares - other.sum * other.sum;
-        (d1 * other.num_items as f32 + d2 * self.num_items as f32)
-            / ((self.num_items * other.num_items) * (self.num_items + other.num_items)) as f32
+    fn split_impurity(&self, other: &Self) -> f64 {
+        self.sum_sq_diffs + other.sum_sq_diffs
     }
 }

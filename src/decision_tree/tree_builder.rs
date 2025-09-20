@@ -29,8 +29,8 @@ struct SplitDescriptor {
     feature: usize,
     pivot: usize,
     threshold: f32,
-    left_impurity: f32,
-    right_impurity: f32,
+    left_impurity: f64,
+    right_impurity: f64,
 }
 
 struct Trainer<'a, T, I, S>
@@ -112,7 +112,7 @@ where
     fn find_best_split(&mut self, range: &IndexRange, imp_range: &I) -> SplitDescriptor {
         let mut split = SplitDescriptor::default();
         let targets = self.trainset.targets(&range);
-        let mut best_impurity = imp_range.impurity();
+        let mut best_impurity = f64::MAX;
         let proto: Vec<(f32, T::Weighted)> = targets.iter().map(|t| (0., *t)).collect();
 
         self.prepare_features();
