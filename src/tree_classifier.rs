@@ -1,4 +1,4 @@
-use super::{Trainset, TreeClassifierImpl};
+use super::{decision_tree::ClassifierModel, Trainset};
 use crate::{
     classify,
     config::{Metric, NumFeatures, TrainConfig},
@@ -19,7 +19,7 @@ use serde::{Deserialize, Serialize};
 /// ```
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Classifier {
-    classifier: TreeClassifierImpl,
+    classifier: ClassifierModel,
     classes_map: ClassesMapping,
 }
 
@@ -89,11 +89,7 @@ impl Classifier {
         let trainset = Trainset::from_dataset(ds.as_view(), &encoded_labels);
 
         Classifier {
-            classifier: TreeClassifierImpl::fit(
-                trainset,
-                classes_map.num_classes(),
-                &config.config,
-            ),
+            classifier: ClassifierModel::fit(trainset, classes_map.num_classes(), &config.config),
             classes_map,
         }
     }

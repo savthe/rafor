@@ -1,5 +1,5 @@
+use super::decision_tree::RegressorModel;
 use super::Trainset;
-use super::TreeRegressorImpl;
 use crate::config::{Metric, NumFeatures, TrainConfig};
 use crate::config_builders::*;
 use crate::{Dataset, DatasetView, FloatTarget};
@@ -17,7 +17,7 @@ use serde::{Deserialize, Serialize};
 /// ```
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Regressor {
-    regressor: TreeRegressorImpl,
+    regressor: RegressorModel,
 }
 
 /// Configuration for tree regressor. Default values:
@@ -77,7 +77,7 @@ impl Regressor {
         let trainset = Trainset::from_dataset(ds.as_view(), targets);
 
         Regressor {
-            regressor: TreeRegressorImpl::fit(trainset, &config.config),
+            regressor: RegressorModel::fit(trainset, &config.config),
         }
     }
 

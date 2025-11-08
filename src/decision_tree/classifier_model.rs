@@ -15,7 +15,7 @@ pub struct ClassifierModel {
     tree: DecisionTree<ClassTarget>,
 }
 
-impl TreeClassifierModel {
+impl ClassifierModel {
     pub fn predict(&self, dataset: &DatasetView) -> Vec<f32> {
         let mut result = vec![0.; dataset.size() * self.num_classes];
 
@@ -43,8 +43,8 @@ impl TreeClassifierModel {
         ts: Trainset<ClassTarget>,
         num_classes: usize,
         config: &TrainConfig,
-    ) -> TreeClassifierImpl {
-        let mut tr = TreeClassifierImpl {
+    ) -> ClassifierModel {
+        let mut tr = ClassifierModel {
             proba: Vec::new(),
             num_classes,
             tree: DecisionTree::new(ts.num_features() as u16),

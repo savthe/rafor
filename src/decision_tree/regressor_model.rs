@@ -24,8 +24,8 @@ impl RegressorModel {
         self.tree.predict(sample).0
     }
 
-    pub fn fit(trainset: Trainset<FloatTarget>, config: &TrainConfig) -> TreeRegressorImpl {
-        let mut tr = TreeRegressorImpl {
+    pub fn fit(trainset: Trainset<FloatTarget>, config: &TrainConfig) -> RegressorModel {
+        let mut tr = RegressorModel {
             tree: DecisionTree::new(trainset.num_features() as u16),
         };
 
