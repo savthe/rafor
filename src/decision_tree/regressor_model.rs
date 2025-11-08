@@ -1,4 +1,4 @@
-use super::{tree_builder, DecisionTree, Trainset};
+use super::{trainer, DecisionTree, Trainset};
 use crate::{
     config::{Metric, TrainConfig},
     metrics::Mse,
@@ -31,7 +31,7 @@ impl RegressorModel {
 
         let (ranges, targets) = match config.metric {
             Metric::MSE => {
-                tree_builder::build(trainset, &mut tr.tree, config.clone(), Mse::default())
+                trainer::build(trainset, &mut tr.tree, config.clone(), Mse::default())
             }
             _ => panic!("Metric is not supported for regressor tree"),
         };
