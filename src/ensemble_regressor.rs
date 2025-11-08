@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 /// A random forest regressor.
 /// # Example
 /// ```
+/// use rafor::rf;
 /// let dataset = [0.7, 0.0, 0.8, 1.0, 0.7, 0.0];
 /// let targets = [1.0, 0.5, 0.2];
 /// let predictor = rf::Regressor::fit(&dataset, &targets, &rf::Regressor::default_config());
@@ -19,7 +20,7 @@ pub struct Regressor {
 }
 
 /// Configuration for ensemble regressor. Default values:
-/// ```
+/// ```ignore
 /// max_depth: usize::MAX,
 /// max_features: NumFeatures::NUMBER(usize::MAX),
 /// seed: 42,

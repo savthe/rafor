@@ -114,3 +114,7 @@ fn classify(proba: &[f32], mapping: &ClassesMapping) -> Vec<i64> {
         .map(|c| mapping.decode(c.argmax()))
         .collect()
 }
+
+#[cfg(test)]
+mod tests;
+
