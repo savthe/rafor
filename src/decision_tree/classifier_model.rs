@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use super::Trainset;
-use super::{tree_builder, DecisionTree};
+use super::{trainer, DecisionTree};
 use crate::{
     config::{Metric, TrainConfig},
     metrics::{self, WithClasses},
@@ -9,13 +9,13 @@ use crate::{
 };
 
 #[derive(Default, Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct TreeClassifierImpl {
+pub struct ClassifierModel {
     proba: Vec<f32>,
     num_classes: usize,
     tree: DecisionTree<ClassTarget>,
 }
 
-impl TreeClassifierImpl {
+impl ClassifierModel {
     pub fn predict(&self, dataset: &DatasetView) -> Vec<f32> {
         let mut result = vec![0.; dataset.size() * self.num_classes];
 
@@ -43,8 +43,8 @@ impl TreeClassifierImpl {
         ts: Trainset<ClassTarget>,
         num_classes: usize,
         config: &TrainConfig,
-    ) -> TreeClassifierImpl {
-        let mut tr = TreeClassifierImpl {
+    ) -> ClassifierModel {
+        let mut tr = ClassifierModel {
             proba: Vec::new(),
             num_classes,
             tree: DecisionTree::new(ts.num_features() as u16),
@@ -56,7 +56,7 @@ impl TreeClassifierImpl {
 
     fn fit_internal(&mut self, ts: Trainset<ClassTarget>, config: &TrainConfig) {
         let (ranges, targets) = match config.metric {
-            Metric::GINI => tree_builder::build(
+            Metric::GINI => trainer::build(
                 ts,
                 &mut self.tree,
                 config.clone(),

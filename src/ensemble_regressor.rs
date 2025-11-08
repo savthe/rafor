@@ -2,7 +2,7 @@ use super::{ensemble_predictor, ensemble_trainer};
 use crate::{
     config::*,
     config_builders::*,
-    decision_tree::{Trainset, TreeRegressorImpl},
+    decision_tree::{RegressorModel, Trainset},
     Dataset, DatasetView, FloatTarget,
 };
 use serde::{Deserialize, Serialize};
@@ -18,7 +18,7 @@ use serde::{Deserialize, Serialize};
 /// ```
 #[derive(Default, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Regressor {
-    ensemble: Vec<TreeRegressorImpl>,
+    ensemble: Vec<RegressorModel>,
 }
 
 /// Configuration for ensemble regressor. Default values:
@@ -59,14 +59,14 @@ impl Default for RegressorConfig {
 
 #[derive(Clone)]
 struct Trainee {
-    tree: TreeRegressorImpl,
+    tree: RegressorModel,
     train_config: TrainConfig,
 }
 
 impl Trainee {
     fn new(train_config: TrainConfig) -> Self {
         Self {
-            tree: TreeRegressorImpl::default(),
+            tree: RegressorModel::default(),
             train_config,
         }
     }
@@ -75,11 +75,11 @@ impl Trainee {
 impl ensemble_trainer::Trainable<FloatTarget> for Trainee {
     fn fit(&mut self, ts: Trainset<FloatTarget>, seed: u64) {
         self.train_config.seed = seed;
-        self.tree = TreeRegressorImpl::fit(ts, &self.train_config);
+        self.tree = RegressorModel::fit(ts, &self.train_config);
     }
 }
 
-impl ensemble_predictor::Predictor for TreeRegressorImpl {
+impl ensemble_predictor::Predictor for RegressorModel {
     fn predict(&self, dataset: &DatasetView) -> Vec<FloatTarget> {
         self.predict(dataset)
     }

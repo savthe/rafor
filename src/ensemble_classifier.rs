@@ -3,7 +3,7 @@ use crate::{
     classify,
     config::*,
     config_builders::*,
-    decision_tree::{Trainset, TreeClassifierImpl},
+    decision_tree::{ClassifierModel, Trainset},
     ClassDecode, ClassTarget, ClassesMapping, Dataset, DatasetView,
 };
 use serde::{Deserialize, Serialize};
@@ -19,7 +19,7 @@ use serde::{Deserialize, Serialize};
 /// ```
 #[derive(Default, Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub struct Classifier {
-    ensemble: Vec<TreeClassifierImpl>,
+    ensemble: Vec<ClassifierModel>,
     classes_map: ClassesMapping,
 }
 
@@ -61,7 +61,7 @@ impl Default for ClassifierConfig {
 
 #[derive(Clone)]
 struct Trainee {
-    tree: TreeClassifierImpl,
+    tree: ClassifierModel,
     num_classes: usize,
     conf: TrainConfig,
 }
@@ -69,11 +69,11 @@ struct Trainee {
 impl ensemble_trainer::Trainable<ClassTarget> for Trainee {
     fn fit(&mut self, ts: Trainset<ClassTarget>, seed: u64) {
         self.conf.seed = seed;
-        self.tree = TreeClassifierImpl::fit(ts, self.num_classes, &self.conf);
+        self.tree = ClassifierModel::fit(ts, self.num_classes, &self.conf);
     }
 }
 
-impl ensemble_predictor::Predictor for TreeClassifierImpl {
+impl ensemble_predictor::Predictor for ClassifierModel {
     fn predict(&self, dataset: &DatasetView) -> Vec<f32> {
         self.predict(dataset)
     }
@@ -111,7 +111,7 @@ impl Classifier {
         let (classes_map, labels_enc) = ClassesMapping::with_encode(labels);
 
         let proto = Trainee {
-            tree: TreeClassifierImpl::default(),
+            tree: ClassifierModel::default(),
             num_classes: classes_map.num_classes(),
             conf: conf.train_config.clone(),
         };

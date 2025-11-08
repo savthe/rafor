@@ -73,14 +73,20 @@ mod classes_mapping;
 pub mod config;
 mod config_builders;
 mod dataset;
-mod decision_forest;
 mod decision_tree;
+mod ensemble_classifier;
+mod ensemble_predictor;
+mod ensemble_regressor;
+mod ensemble_trainer;
 mod metrics;
+mod tree_classifier;
+mod tree_regressor;
 mod weightable;
 
 use argminmax::ArgMinMax;
 use classes_mapping::{ClassDecode, ClassesMapping};
 use dataset::{Dataset, DatasetView};
+use decision_tree::Trainset;
 use weightable::{LabelWeight, Weightable, WEIGHT_MASK};
 
 pub type ClassTarget = u32;
@@ -96,14 +102,14 @@ pub mod prelude {
 
 pub mod dt {
     //! Decision Tree implementation.
-    pub use super::decision_tree::tree_classifier::{Classifier, ClassifierConfig};
-    pub use super::decision_tree::tree_regressor::{Regressor, RegressorConfig};
+    pub use super::tree_classifier::{Classifier, ClassifierConfig};
+    pub use super::tree_regressor::{Regressor, RegressorConfig};
 }
 
 pub mod rf {
     //! Random Forest implementation.
-    pub use crate::decision_forest::ensemble_classifier::{Classifier, ClassifierConfig};
-    pub use crate::decision_forest::ensemble_regressor::{Regressor, RegressorConfig};
+    pub use crate::ensemble_classifier::{Classifier, ClassifierConfig};
+    pub use crate::ensemble_regressor::{Regressor, RegressorConfig};
 }
 
 fn classify(proba: &[f32], mapping: &ClassesMapping) -> Vec<i64> {

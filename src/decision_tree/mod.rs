@@ -1,14 +1,11 @@
-pub mod tree_classifier;
-pub mod tree_classifier_impl;
-pub mod tree_regressor;
-pub mod tree_regressor_impl;
-
+mod classifier_model;
+mod regressor_model;
+pub use classifier_model::ClassifierModel;
+pub use regressor_model::RegressorModel;
 mod decision_tree;
-mod tree_builder;
+mod trainer;
 
-pub use tree_builder::Trainset;
-pub use tree_classifier_impl::TreeClassifierImpl;
-pub use tree_regressor_impl::TreeRegressorImpl;
+pub use trainer::Trainset;
 
 use decision_tree::DecisionTree;
 use decision_tree::Splittable;
