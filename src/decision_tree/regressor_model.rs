@@ -1,4 +1,4 @@
-use super::{trainer, DecisionTree, Trainset};
+use super::{trainer, DecisionTree, TrainSpace};
 use crate::{
     config::{Metric, TrainConfig},
     metrics::Mse,
@@ -24,7 +24,7 @@ impl RegressorModel {
         self.tree.predict(sample).0
     }
 
-    pub fn fit(trainset: Trainset<FloatTarget>, config: &TrainConfig) -> RegressorModel {
+    pub fn fit(trainset: TrainSpace<FloatTarget>, config: &TrainConfig) -> RegressorModel {
         let mut tr = RegressorModel {
             tree: DecisionTree::new(trainset.num_features() as u16),
         };

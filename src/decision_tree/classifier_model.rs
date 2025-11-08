@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use super::Trainset;
+use super::TrainSpace;
 use super::{trainer, DecisionTree};
 use crate::{
     config::{Metric, TrainConfig},
@@ -40,7 +40,7 @@ impl ClassifierModel {
     }
 
     pub fn fit(
-        ts: Trainset<ClassTarget>,
+        ts: TrainSpace<ClassTarget>,
         num_classes: usize,
         config: &TrainConfig,
     ) -> ClassifierModel {
@@ -54,7 +54,7 @@ impl ClassifierModel {
         tr
     }
 
-    fn fit_internal(&mut self, ts: Trainset<ClassTarget>, config: &TrainConfig) {
+    fn fit_internal(&mut self, ts: TrainSpace<ClassTarget>, config: &TrainConfig) {
         let (ranges, targets) = match config.metric {
             Metric::GINI => trainer::build(
                 ts,

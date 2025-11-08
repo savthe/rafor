@@ -1,5 +1,5 @@
 use super::decision_tree::RegressorModel;
-use super::Trainset;
+use super::TrainSpace;
 use crate::config::{Metric, NumFeatures, TrainConfig};
 use crate::config_builders::*;
 use crate::{Dataset, DatasetView, FloatTarget};
@@ -74,7 +74,7 @@ impl Regressor {
     /// Trains a regression tree with dataset given by a slice of length divisible by targets.len().
     pub fn fit(dataset: &[f32], targets: &[FloatTarget], config: &RegressorConfig) -> Self {
         let ds = Dataset::with_transposed(dataset, targets.len());
-        let trainset = Trainset::from_dataset(ds.as_view(), targets);
+        let trainset = TrainSpace::from_dataset(ds.as_view(), targets);
 
         Regressor {
             regressor: RegressorModel::fit(trainset, &config.config),

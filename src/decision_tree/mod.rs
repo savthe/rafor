@@ -5,7 +5,7 @@ pub use regressor_model::RegressorModel;
 mod decision_tree;
 mod trainer;
 
-pub use trainer::Trainset;
+pub use trainer::TrainSpace;
 
 use decision_tree::DecisionTree;
 use decision_tree::Splittable;

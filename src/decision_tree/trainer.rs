@@ -44,12 +44,12 @@ where
     max_features: usize,
     rng: Option<SmallRng>,
     conf: TrainConfig,
-    trainset: Trainset<'a, T>,
+    trainset: TrainSpace<'a, T>,
     tree: &'a mut S,
 }
 
 pub fn build<T, I, S>(
-    trainset: Trainset<T>,
+    trainset: TrainSpace<T>,
     tree: &mut S,
     conf: TrainConfig,
     impurity_proto: I,
@@ -178,14 +178,14 @@ where
     }
 }
 
-pub struct Trainset<'a, T: Weightable + Copy> {
+pub struct TrainSpace<'a, T: Weightable + Copy> {
     dataset: DatasetView<'a>,
     samples: Vec<u32>,
     targets: Vec<T::Weighted>,
 }
 
-impl<'a, T: Weightable + Copy> Trainset<'a, T> {
-    pub fn from_dataset(dataset: DatasetView<'a>, targets: &[T]) -> Trainset<'a, T> {
+impl<'a, T: Weightable + Copy> TrainSpace<'a, T> {
+    pub fn from_dataset(dataset: DatasetView<'a>, targets: &[T]) -> TrainSpace<'a, T> {
         Self {
             samples: (0..targets.len()).map(|i| i as u32).collect(),
             dataset,
@@ -197,8 +197,8 @@ impl<'a, T: Weightable + Copy> Trainset<'a, T> {
         dataset: DatasetView<'a>,
         samples: Vec<u32>,
         targets: Vec<(T, SampleWeight)>,
-    ) -> Trainset<'a, T> {
-        Trainset {
+    ) -> TrainSpace<'a, T> {
+        TrainSpace {
             dataset,
             samples,
             targets: targets

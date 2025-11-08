@@ -1,4 +1,4 @@
-use super::{decision_tree::ClassifierModel, Trainset};
+use super::{decision_tree::ClassifierModel, TrainSpace};
 use crate::{
     classify,
     config::{Metric, NumFeatures, TrainConfig},
@@ -86,7 +86,7 @@ impl Classifier {
 
         let (classes_map, encoded_labels) = ClassesMapping::with_encode(labels);
 
-        let trainset = Trainset::from_dataset(ds.as_view(), &encoded_labels);
+        let trainset = TrainSpace::from_dataset(ds.as_view(), &encoded_labels);
 
         Classifier {
             classifier: ClassifierModel::fit(trainset, classes_map.num_classes(), &config.config),

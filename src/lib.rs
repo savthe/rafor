@@ -86,7 +86,7 @@ mod weightable;
 use argminmax::ArgMinMax;
 use classes_mapping::{ClassDecode, ClassesMapping};
 use dataset::{Dataset, DatasetView};
-use decision_tree::Trainset;
+use decision_tree::TrainSpace;
 use weightable::{SampleWeight, Weightable, WEIGHT_MASK};
 
 pub type ClassTarget = u32;

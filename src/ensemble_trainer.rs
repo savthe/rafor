@@ -1,5 +1,5 @@
 use crate::{
-    config::EnsembleConfig, decision_tree::Trainset, DatasetView, SampleWeight, Weightable,
+    config::EnsembleConfig, decision_tree::TrainSpace, DatasetView, SampleWeight, Weightable,
     WEIGHT_MASK,
 };
 use rand::{rngs::SmallRng, Rng, SeedableRng};
@@ -10,7 +10,7 @@ use std::{
 };
 
 pub trait Trainable<Target: Weightable + Copy> {
-    fn fit(&mut self, ts: Trainset<Target>, seed: u64);
+    fn fit(&mut self, ts: TrainSpace<Target>, seed: u64);
 }
 
 pub fn fit<Target, Trainee>(
@@ -43,7 +43,7 @@ where
                         let mut t = proto.clone();
                         let mut rng = SmallRng::seed_from_u64(seeds[id]);
                         let (samples, targets) = bootstrap(targets, &mut rng);
-                        let ts = Trainset::from_bootstrap(view.clone(), samples, targets);
+                        let ts = TrainSpace::from_bootstrap(view.clone(), samples, targets);
                         t.fit(ts, rng.random());
                         trainees.push(t);
                     }

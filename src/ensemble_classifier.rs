@@ -3,7 +3,7 @@ use crate::{
     classify,
     config::*,
     config_builders::*,
-    decision_tree::{ClassifierModel, Trainset},
+    decision_tree::{ClassifierModel, TrainSpace},
     ClassDecode, ClassTarget, ClassesMapping, Dataset, DatasetView,
 };
 use serde::{Deserialize, Serialize};
@@ -67,7 +67,7 @@ struct Trainee {
 }
 
 impl ensemble_trainer::Trainable<ClassTarget> for Trainee {
-    fn fit(&mut self, ts: Trainset<ClassTarget>, seed: u64) {
+    fn fit(&mut self, ts: TrainSpace<ClassTarget>, seed: u64) {
         self.conf.seed = seed;
         self.tree = ClassifierModel::fit(ts, self.num_classes, &self.conf);
     }
