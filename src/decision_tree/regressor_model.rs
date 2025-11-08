@@ -7,11 +7,11 @@ use crate::{
 use serde::{Deserialize, Serialize};
 
 #[derive(Default, Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct TreeRegressorImpl {
+pub struct RegressorModel {
     tree: DecisionTree<()>,
 }
 
-impl TreeRegressorImpl {
+impl RegressorModel {
     pub fn predict(&self, dataset: &DatasetView) -> Vec<FloatTarget> {
         dataset.samples().map(|s| self.predict_one(s)).collect()
     }

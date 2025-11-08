@@ -9,13 +9,13 @@ use crate::{
 };
 
 #[derive(Default, Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct TreeClassifierImpl {
+pub struct ClassifierModel {
     proba: Vec<f32>,
     num_classes: usize,
     tree: DecisionTree<ClassTarget>,
 }
 
-impl TreeClassifierImpl {
+impl TreeClassifierModel {
     pub fn predict(&self, dataset: &DatasetView) -> Vec<f32> {
         let mut result = vec![0.; dataset.size() * self.num_classes];
 
