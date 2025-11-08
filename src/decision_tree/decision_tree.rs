@@ -10,7 +10,6 @@ pub struct Node<T> {
     threshold: f32,
     feature: u16,
     left: usize,
-    right: usize,
 }
 
 #[derive(Default, Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -51,7 +50,7 @@ impl<T: Default + Copy> DecisionTree<T> {
             if sample[node.feature as usize] <= node.threshold {
                 id = node.left
             } else {
-                id = node.right
+                id = node.left + 1
             }
         }
         (self.tree[id].threshold, self.tree[id].value)
@@ -67,13 +66,11 @@ impl<T: Default + Copy> Splittable for DecisionTree<T> {
         self.tree[index].threshold = threshold;
 
         let left = self.tree.len();
-        let right = self.tree.len() + 1;
         self.tree.push(Node::default());
         self.tree.push(Node::default());
 
         let node = &mut self.tree[index];
         node.left = left;
-        node.right = right;
-        (left, right)
+        (left, left + 1)
     }
 }
