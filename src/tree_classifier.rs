@@ -1,4 +1,4 @@
-use super::{decision_tree::ClassifierModel, TrainSpace};
+use super::{decision_tree::ClassifierModel, TrainView};
 use crate::{
     classify,
     config::{Metric, NumFeatures, TrainConfig},
@@ -81,15 +81,16 @@ impl Classifier {
     }
 
     /// Trains a classifier tree with dataset given by a slice of length divisible by targets.len().
-    pub fn fit(data: &[f32], labels: &[i64], config: &ClassifierConfig) -> Self {
-        let ds = Dataset::with_transposed(data, labels.len());
-
+    pub fn fit(raw_dataset: &[f32], labels: &[i64], config: &ClassifierConfig) -> Self {
+        let dataset = Dataset::with_transposed(raw_dataset, labels.len());
         let (classes_map, encoded_labels) = ClassesMapping::with_encode(labels);
-
-        let trainset = TrainSpace::from_dataset(ds.as_view(), &encoded_labels);
-
+        let weights = vec![1; labels.len()];
+        let tv = TrainView::new(dataset.as_view(), &encoded_labels, &weights);
         Classifier {
-            classifier: ClassifierModel::fit(trainset, classes_map.num_classes(), &config.config),
+            classifier: ClassifierModel::fit(tv,
+                classes_map.num_classes(),
+                &config.config,
+            ),
             classes_map,
         }
     }

@@ -78,19 +78,14 @@ mod ensemble_classifier;
 mod ensemble_predictor;
 mod ensemble_regressor;
 mod ensemble_trainer;
-mod metrics;
+mod labels;
 mod tree_classifier;
 mod tree_regressor;
-mod weightable;
-
 use argminmax::ArgMinMax;
 use classes_mapping::{ClassDecode, ClassesMapping};
 use dataset::{Dataset, DatasetView};
-use decision_tree::TrainSpace;
-use weightable::{SampleWeight, Weightable, WEIGHT_MASK};
+use decision_tree::TrainView;
 
-pub type ClassTarget = u32;
-pub type FloatTarget = f32;
 type IndexRange = std::ops::Range<usize>;
 
 pub mod prelude {

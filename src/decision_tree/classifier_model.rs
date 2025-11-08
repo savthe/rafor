@@ -1,12 +1,15 @@
-use serde::{Deserialize, Serialize};
-
-use super::TrainSpace;
-use super::{trainer, DecisionTree};
+use super::splitter::GiniSplitter;
+use super::trainer;
+use super::DecisionTree;
+use super::TrainView;
 use crate::{
     config::{Metric, TrainConfig},
-    metrics::{self, WithClasses},
-    ClassTarget, DatasetView, Weightable,
+    labels::*,
+    DatasetView,
 };
+use trainer::TrainSpace;
+
+use serde::{Deserialize, Serialize};
 
 #[derive(Default, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ClassifierModel {
@@ -39,40 +42,51 @@ impl ClassifierModel {
         &self.proba[i..i + self.num_classes]
     }
 
-    pub fn fit(
-        ts: TrainSpace<ClassTarget>,
-        num_classes: usize,
-        config: &TrainConfig,
+    pub fn fit(tv: TrainView<ClassTarget>, num_cls: usize, cfg: &TrainConfig) -> ClassifierModel {
+        let max_weight = *tv.weights.iter().max().unwrap();
+
+        if num_cls < (1 << 8) && max_weight < (1 << 24) {
+            Self::fit_internal::<DenseClass<8>>(tv, num_cls, cfg)
+        } else if num_cls < (1 << 16) && max_weight < (1 << 16) {
+            Self::fit_internal::<DenseClass<16>>(tv, num_cls, cfg)
+        } else if num_cls < (1 << 24) && max_weight < (1 << 8) {
+            Self::fit_internal::<DenseClass<24>>(tv, num_cls, cfg)
+        } else {
+            Self::fit_internal::<(ClassTarget, SampleWeight)>(tv, num_cls, cfg)
+        }
+    }
+
+    pub fn fit_internal<P: Weighted<ClassTarget>>(
+        tv: TrainView<ClassTarget>,
+        num_cls: usize,
+        cfg: &TrainConfig,
     ) -> ClassifierModel {
         let mut tr = ClassifierModel {
             proba: Vec::new(),
-            num_classes,
-            tree: DecisionTree::new(ts.num_features() as u16),
+            num_classes: num_cls,
+            tree: DecisionTree::new(tv.dataview.num_features() as u16),
         };
 
-        tr.fit_internal(ts, config);
-        tr
-    }
+        let mut space: TrainSpace<P> = TrainSpace::new(tv);
 
-    fn fit_internal(&mut self, ts: TrainSpace<ClassTarget>, config: &TrainConfig) {
-        let (ranges, targets) = match config.metric {
-            Metric::GINI => trainer::build(
-                ts,
-                &mut self.tree,
-                config.clone(),
-                metrics::Gini::with_classes(self.num_classes),
+        let ranges = match cfg.metric {
+            Metric::GINI => trainer::fit(
+                &mut space,
+                &mut tr.tree,
+                cfg.clone(),
+                GiniSplitter::new(num_cls, cfg.min_samples_leaf),
             ),
             _ => panic!("Metric is not supported for classifier tree"),
         };
 
-        self.proba.resize(self.num_classes * ranges.len(), 0.);
+        tr.proba.resize(tr.num_classes * ranges.len(), 0.);
         let mut offset = 0;
-        for ((node, range), bins) in ranges.iter().zip(self.proba.chunks_mut(self.num_classes)) {
-            let targets = &targets[range.clone()];
+        for ((node, range), bins) in ranges.iter().zip(tr.proba.chunks_mut(tr.num_classes)) {
+            let targets = &space.targets(&range);
 
             let mut count = 0;
-            for (x, w) in targets.iter().map(|t| ClassTarget::unweight(t)) {
-                //let (x, w) = u32::unweight(t);
+            for t in targets.iter() {
+                let (x, w) = t.unweight();
                 bins[x as usize] += w as f32;
                 count += w;
             }
@@ -81,8 +95,9 @@ impl ClassifierModel {
                 *x /= count as f32;
             }
 
-            self.tree.set_node_value(*node, offset);
+            tr.tree.set_node_value(*node, offset);
             offset += 1;
         }
+        tr
     }
 }

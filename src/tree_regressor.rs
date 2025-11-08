@@ -1,8 +1,7 @@
-use super::decision_tree::RegressorModel;
-use super::TrainSpace;
+use super::{decision_tree::RegressorModel, TrainView};
 use crate::config::{Metric, NumFeatures, TrainConfig};
 use crate::config_builders::*;
-use crate::{Dataset, DatasetView, FloatTarget};
+use crate::{labels::FloatTarget, Dataset, DatasetView};
 
 use serde::{Deserialize, Serialize};
 
@@ -72,12 +71,13 @@ impl Regressor {
     }
 
     /// Trains a regression tree with dataset given by a slice of length divisible by targets.len().
-    pub fn fit(dataset: &[f32], targets: &[FloatTarget], config: &RegressorConfig) -> Self {
-        let ds = Dataset::with_transposed(dataset, targets.len());
-        let trainset = TrainSpace::from_dataset(ds.as_view(), targets);
+    pub fn fit(raw_dataset: &[f32], targets: &[FloatTarget], config: &RegressorConfig) -> Self {
+        let dataset = Dataset::with_transposed(raw_dataset, targets.len());
+        let weights = vec![1; targets.len()];
+        let tv = TrainView::new(dataset.as_view(), &targets, &weights);
 
         Regressor {
-            regressor: RegressorModel::fit(trainset, &config.config),
+            regressor: RegressorModel::fit(tv, &config.config),
         }
     }
 

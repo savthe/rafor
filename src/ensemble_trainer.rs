@@ -1,7 +1,4 @@
-use crate::{
-    config::EnsembleConfig, decision_tree::TrainSpace, DatasetView, SampleWeight, Weightable,
-    WEIGHT_MASK,
-};
+use crate::{config::EnsembleConfig, labels::SampleWeight, DatasetView, TrainView};
 use rand::{rngs::SmallRng, Rng, SeedableRng};
 use std::{
     sync::atomic::{AtomicUsize, Ordering},
@@ -9,8 +6,8 @@ use std::{
     thread,
 };
 
-pub trait Trainable<Target: Weightable + Copy> {
-    fn fit(&mut self, ts: TrainSpace<Target>, seed: u64);
+pub trait Trainable<T: Copy> {
+    fn fit(&mut self, ts: TrainView<T>, seed: u64);
 }
 
 pub fn fit<Target, Trainee>(
@@ -21,7 +18,7 @@ pub fn fit<Target, Trainee>(
     seed: u64,
 ) -> Vec<Trainee>
 where
-    Target: Weightable + Copy + Sync + Send,
+    Target: Copy + Sync + Send,
     Trainee: Trainable<Target> + Clone + Send + Sync,
 {
     assert!(config.num_threads > 0);
@@ -42,8 +39,8 @@ where
                     if id < num_trees {
                         let mut t = proto.clone();
                         let mut rng = SmallRng::seed_from_u64(seeds[id]);
-                        let (samples, targets) = bootstrap(targets, &mut rng);
-                        let ts = TrainSpace::from_bootstrap(view.clone(), samples, targets);
+                        let weights = bootstrap(targets.len(), &mut rng);
+                        let ts = TrainView::new(view.clone(), &targets, &weights);
                         t.fit(ts, rng.random());
                         trainees.push(t);
                     }
@@ -62,24 +59,11 @@ where
     ensemble
 }
 
-fn bootstrap<T: Copy>(targets: &[T], rng: &mut SmallRng) -> (Vec<u32>, Vec<(T, SampleWeight)>) {
-    let num_samples = targets.len();
-    let mut weights: Vec<usize> = vec![0; num_samples];
+fn bootstrap(num_samples: usize, rng: &mut SmallRng) -> Vec<SampleWeight> {
+    let mut weights: Vec<SampleWeight> = vec![0; num_samples];
     for _ in 0..num_samples {
         let i = rng.random_range(0..num_samples);
         weights[i] += 1
     }
-
-    let amount = weights.iter().filter(|x| **x > 0).count();
-    let mut samples: Vec<u32> = Vec::with_capacity(amount);
-    let mut weighted_targets: Vec<(T, SampleWeight)> = Vec::with_capacity(amount);
-
-    for (i, &w) in weights.iter().enumerate() {
-        if w > 0 {
-            samples.push(i as u32);
-            weighted_targets.push((targets[i], (w as SampleWeight) & WEIGHT_MASK));
-        }
-    }
-
-    (samples, weighted_targets)
+    weights
 }

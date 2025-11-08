@@ -1,10 +1,11 @@
-use super::{ensemble_predictor, ensemble_trainer};
 use crate::{
+    ensemble_predictor,
+    ensemble_trainer,
     classify,
     config::*,
     config_builders::*,
-    decision_tree::{ClassifierModel, TrainSpace},
-    ClassDecode, ClassTarget, ClassesMapping, Dataset, DatasetView,
+    TrainView, decision_tree::ClassifierModel,
+    ClassDecode, labels::ClassTarget, ClassesMapping, Dataset, DatasetView,
 };
 use serde::{Deserialize, Serialize};
 
@@ -67,9 +68,9 @@ struct Trainee {
 }
 
 impl ensemble_trainer::Trainable<ClassTarget> for Trainee {
-    fn fit(&mut self, ts: TrainSpace<ClassTarget>, seed: u64) {
+    fn fit(&mut self, tv: TrainView<ClassTarget>, seed: u64) {
         self.conf.seed = seed;
-        self.tree = ClassifierModel::fit(ts, self.num_classes, &self.conf);
+        self.tree = ClassifierModel::fit(tv, self.num_classes, &self.conf);
     }
 }
 

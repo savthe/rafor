@@ -1,8 +1,10 @@
-use super::Splittable;
+use super::decision_tree;
+use super::splitter::Splitter;
+use super::TrainView;
 use crate::{
     config::{NumFeatures, TrainConfig},
-    metrics::ImpurityMetric,
-    DatasetView, IndexRange, SampleWeight, Weightable, WEIGHT_MASK,
+    labels::*,
+    DatasetView, IndexRange,
 };
 use radsort;
 use rand::{rngs::SmallRng, seq::SliceRandom, SeedableRng};
@@ -25,77 +27,74 @@ impl TrainConfig {
 }
 
 #[derive(Default)]
-struct SplitDescriptor {
+struct Split {
     feature: usize,
     pivot: usize,
     threshold: f32,
-    left_impurity: f64,
-    right_impurity: f64,
 }
 
-struct Trainer<'a, T, I, S>
+// Trainer gets mutable refs to the tree it should train, and the training space. Target is at this
+// point is generic, but actually for random forest, it is a weighted target. A splitter knows how
+// to handle it, trainer just rearranges targets and passes them to splitter.
+struct Trainer<'a, 'b, Target, Tree, S>
 where
-    T: Weightable + Copy,
-    I: ImpurityMetric<T> + Clone,
-    S: Splittable,
+    Target: Copy,
+    Tree: decision_tree::Splittable,
+    S: Splitter<Target>,
 {
-    impurity_proto: I,
     features_perm: Vec<usize>,
     max_features: usize,
     rng: Option<SmallRng>,
     conf: TrainConfig,
-    trainset: TrainSpace<'a, T>,
-    tree: &'a mut S,
+    space: &'a mut TrainSpace<'b, Target>,
+    tree: &'a mut Tree,
+    splitter: S,
 }
 
-pub fn build<T, I, S>(
-    trainset: TrainSpace<T>,
-    tree: &mut S,
+pub fn fit<Target, Tree>(
+    space: &mut TrainSpace<Target>,
+    tree: &mut Tree,
     conf: TrainConfig,
-    impurity_proto: I,
-) -> (Vec<(usize, IndexRange)>, Vec<T::Weighted>)
+    splitter: impl Splitter<Target>,
+) -> Vec<(usize, IndexRange)>
 where
-    T: Weightable + Copy,
-    I: ImpurityMetric<T> + Clone,
-    S: Splittable,
+    Target: Copy,
+    Tree: decision_tree::Splittable,
 {
-    let (max_features, rng) = conf.setup_max_features(trainset.num_features());
+    let (max_features, rng) = conf.setup_max_features(space.num_features());
     let mut trainer = Trainer {
-        impurity_proto,
         max_features,
         rng,
-        features_perm: (0..trainset.num_features()).collect(),
+        features_perm: (0..space.num_features()).collect(),
         conf,
-        trainset,
+        space,
         tree,
+        splitter,
     };
 
-    (trainer.fit(), trainer.trainset.targets)
+    trainer.fit()
 }
 
-impl<'a, T, I, S> Trainer<'a, T, I, S>
+impl<'a, 'b, Target, Tree, S> Trainer<'a, 'b, Target, Tree, S>
 where
-    T: Weightable + Copy,
-    I: ImpurityMetric<T> + Clone,
-    S: Splittable,
+    Target: Copy,
+    Tree: decision_tree::Splittable,
+    S: Splitter<Target>,
 {
     pub fn fit(&mut self) -> Vec<(usize, IndexRange)> {
-        let mut stack: Vec<(usize, IndexRange, usize)> = vec![(0, 0..self.trainset.size(), 0); 1];
+        let mut stack: Vec<(usize, IndexRange, usize)> = vec![(0, 0..self.space.size(), 0); 1];
         let mut ranges: Vec<(usize, IndexRange)> = Vec::new();
         while let Some((node, range, depth)) = stack.pop() {
-            let mut split = SplitDescriptor::default();
+            let mut split = Split::default();
             if depth < self.conf.max_depth
                 && range.len() >= self.conf.min_samples_split
                 && range.len() >= 2 * self.conf.min_samples_leaf
             {
-                let imp_range = self.compute_impurity(self.trainset.targets(&range));
-                if imp_range.impurity() > 0. {
-                    split = self.find_best_split(&range, &imp_range);
-                }
+                split = self.find_best_split(&range);
             }
 
             if split.pivot > 0 {
-                self.trainset.split(&range, split.feature, split.threshold);
+                self.space.split(&range, split.feature, split.threshold);
                 let (left_range, right_range) = (range.start..split.pivot, split.pivot..range.end);
                 let (left_node, right_node) =
                     self.tree.split(node, split.feature as u16, split.threshold);
@@ -109,38 +108,33 @@ where
         ranges
     }
 
-    fn find_best_split(&mut self, range: &IndexRange, imp_range: &I) -> SplitDescriptor {
-        let mut split = SplitDescriptor::default();
-        let targets = self.trainset.targets(&range);
-        let mut best_impurity = f64::MAX;
-        let proto: Vec<(f32, T::Weighted)> = targets.iter().map(|t| (0., *t)).collect();
+    fn find_best_split(&mut self, range: &IndexRange) -> Split {
+        let mut split = Split::default();
+        let targets = self.space.targets(&range);
 
+        if !self.splitter.prepare(targets) {
+            return split;
+        }
+
+        let mut best_impurity = f64::INFINITY;
+        let proto: Vec<(f32, Target)> = targets.iter().map(|t| (0., *t)).collect();
         self.prepare_features();
 
         for (idx, &feature) in self.features_perm.iter().enumerate() {
             let ordered_samples = self.prepare_samples(&proto, &range, feature);
-            let mut imp_left = self.impurity_proto.clone();
-            let mut imp_right = imp_range.clone();
-
-            for i in 0..ordered_samples.len() - self.conf.min_samples_leaf {
-                let (value, t) = ordered_samples[i];
-                let next = ordered_samples[i + 1].0;
-                let (label, weight) = T::unweight(&t);
-                imp_left.push(label, weight);
-                imp_right.pop(label, weight);
-                if value < next
-                    && i + 1 >= self.conf.min_samples_leaf
-                    && imp_left.split_impurity(&imp_right) < best_impurity
-                {
-                    best_impurity = imp_left.split_impurity(&imp_right);
-                    split.pivot = range.start + i + 1;
-                    split.feature = feature;
-                    split.threshold = (value + next) / 2.;
-                    split.left_impurity = imp_left.impurity();
-                    split.right_impurity = imp_right.impurity();
-                }
+            assert!(ordered_samples.len() == range.len());
+            let p = self.splitter.find_split(&ordered_samples, best_impurity);
+            if p.pivot > 0 {
+                split.pivot = p.pivot + range.start;
+                split.feature = feature;
+                split.threshold =
+                    (ordered_samples[p.pivot - 1].0 + ordered_samples[p.pivot].0) / 2.;
+                best_impurity = p.impurity;
             }
 
+            if best_impurity == 0. {
+                break;
+            }
             if idx >= self.max_features && split.pivot > range.start {
                 break;
             }
@@ -154,63 +148,58 @@ where
         }
     }
 
-    fn compute_impurity(&self, targets: &[T::Weighted]) -> I {
-        let mut imp = self.impurity_proto.clone();
-        for t in targets.iter() {
-            let (label, weight) = T::unweight(t);
-            imp.push(label, weight);
-        }
-        imp
-    }
-
     fn prepare_samples(
         &self,
-        proto: &Vec<(f32, T::Weighted)>,
+        proto: &Vec<(f32, Target)>,
         range: &IndexRange,
         feature: usize,
-    ) -> Vec<(f32, T::Weighted)> {
+    ) -> Vec<(f32, Target)> {
         let mut v = proto.clone();
-        for ((x, _), y) in v.iter_mut().zip(self.trainset.samples(&range).iter()) {
-            *x = self.trainset.feature_val(*y, feature);
+        for ((x, _), y) in v.iter_mut().zip(self.space.samples(&range).iter()) {
+            *x = self.space.feature_val(*y, feature);
         }
         radsort::sort_by_key(&mut v, |k| k.0);
         v
     }
 }
 
-pub struct TrainSpace<'a, T: Weightable + Copy> {
-    dataset: DatasetView<'a>,
+pub struct TrainSpace<'a, W> {
+    dataview: DatasetView<'a>,
     samples: Vec<u32>,
-    targets: Vec<T::Weighted>,
+    targets: Vec<W>,
 }
 
-impl<'a, T: Weightable + Copy> TrainSpace<'a, T> {
-    pub fn from_dataset(dataset: DatasetView<'a>, targets: &[T]) -> TrainSpace<'a, T> {
-        Self {
-            samples: (0..targets.len()).map(|i| i as u32).collect(),
-            dataset,
-            targets: targets.iter().map(|t| (t.weight(1))).collect(),
-        }
-    }
+impl<'a, W> TrainSpace<'a, W> {
+    pub fn new<T>(ts: TrainView<'a, T>) -> TrainSpace<'a, W>
+    where
+        W: Weighted<T>,
+    {
+        let amount = ts.weights.iter().filter(|&x| *x > 0).count();
+        let mut samples: Vec<u32> = Vec::with_capacity(amount);
+        let mut weighted_targets: Vec<W> = Vec::with_capacity(amount);
 
-    pub fn from_bootstrap(
-        dataset: DatasetView<'a>,
-        samples: Vec<u32>,
-        targets: Vec<(T, SampleWeight)>,
-    ) -> TrainSpace<'a, T> {
+        for (i, (t, &w)) in ts.targets.iter().zip(ts.weights.iter()).enumerate() {
+            if w > 0 {
+                samples.push(i as u32);
+                weighted_targets.push(W::new(t, w));
+            }
+        }
+
         TrainSpace {
-            dataset,
+            dataview: ts.dataview,
             samples,
-            targets: targets
-                .iter()
-                .map(|(t, w)| t.weight(*w & WEIGHT_MASK))
-                .collect(),
+            targets: weighted_targets,
         }
     }
 
     #[inline(always)]
-    fn targets(&self, range: &IndexRange) -> &[T::Weighted] {
-        &self.targets[range.clone()]
+    pub fn num_features(&self) -> usize {
+        self.dataview.num_features()
+    }
+
+    #[inline(always)]
+    pub fn targets(&self, range: &IndexRange) -> &[W] {
+        &&self.targets[range.clone()]
     }
 
     #[inline(always)]
@@ -234,16 +223,11 @@ impl<'a, T: Weightable + Copy> TrainSpace<'a, T> {
 
     #[inline(always)]
     fn feature_val(&self, id: u32, feature: usize) -> f32 {
-        self.dataset.feature_val(id as usize, feature)
+        self.dataview.feature_val(id as usize, feature)
     }
 
     #[inline(always)]
     fn size(&self) -> usize {
         self.samples.len()
-    }
-
-    #[inline(always)]
-    pub fn num_features(&self) -> usize {
-        self.dataset.num_features()
     }
 }

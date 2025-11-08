@@ -1,9 +1,16 @@
-use super::{trainer, DecisionTree, TrainSpace};
+use super::DecisionTree;
+
+use super::splitter::MseSplitter;
+
+use super::trainer;
+use super::TrainView;
 use crate::{
     config::{Metric, TrainConfig},
-    metrics::Mse,
-    DatasetView, FloatTarget, Weightable,
+    labels::*,
+    DatasetView,
 };
+use trainer::TrainSpace;
+
 use serde::{Deserialize, Serialize};
 
 #[derive(Default, Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -16,29 +23,36 @@ impl RegressorModel {
         dataset.samples().map(|s| self.predict_one(s)).collect()
     }
 
+    #[inline(always)]
     pub fn num_features(&self) -> usize {
         self.tree.num_features()
     }
 
+    #[inline(always)]
     pub fn predict_one(&self, sample: &[f32]) -> FloatTarget {
         self.tree.predict(sample).0
     }
 
-    pub fn fit(trainset: TrainSpace<FloatTarget>, config: &TrainConfig) -> RegressorModel {
+    pub fn fit(tv: TrainView<FloatTarget>, config: &TrainConfig) -> RegressorModel {
         let mut tr = RegressorModel {
-            tree: DecisionTree::new(trainset.num_features() as u16),
+            tree: DecisionTree::new(tv.dataview.num_features() as u16),
         };
-
-        let (ranges, targets) = match config.metric {
-            Metric::MSE => trainer::build(trainset, &mut tr.tree, config.clone(), Mse::default()),
+        let mut space = TrainSpace::<(f32, SampleWeight)>::new(tv);
+        let ranges = match config.metric {
+            Metric::MSE => trainer::fit(
+                &mut space,
+                &mut tr.tree,
+                config.clone(),
+                MseSplitter::new(config.min_samples_leaf),
+            ),
             _ => panic!("Metric is not supported for regressor tree"),
         };
 
         for (node, range) in ranges.iter() {
-            let targets = &targets[range.clone()];
+            let targets = &space.targets(&range);
             let mut s: f32 = 0.;
             let mut n = 0;
-            for (x, w) in targets.iter().map(|t| FloatTarget::unweight(t)) {
+            for &(x, w) in targets.iter() {
                 s += x * w as f32;
                 n += w;
             }
