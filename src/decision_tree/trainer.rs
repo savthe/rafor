@@ -2,7 +2,7 @@ use super::Splittable;
 use crate::{
     config::{NumFeatures, TrainConfig},
     metrics::ImpurityMetric,
-    DatasetView, IndexRange, LabelWeight, Weightable, WEIGHT_MASK,
+    DatasetView, IndexRange, SampleWeight, Weightable, WEIGHT_MASK,
 };
 use radsort;
 use rand::{rngs::SmallRng, seq::SliceRandom, SeedableRng};
@@ -196,7 +196,7 @@ impl<'a, T: Weightable + Copy> Trainset<'a, T> {
     pub fn from_bootstrap(
         dataset: DatasetView<'a>,
         samples: Vec<u32>,
-        targets: Vec<(T, LabelWeight)>,
+        targets: Vec<(T, SampleWeight)>,
     ) -> Trainset<'a, T> {
         Trainset {
             dataset,

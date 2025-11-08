@@ -1,4 +1,4 @@
-use crate::{ClassTarget, LabelWeight};
+use crate::{ClassTarget, SampleWeight};
 
 #[derive(Default, Clone, Debug)]
 pub struct Gini {
@@ -15,8 +15,8 @@ pub struct Mse {
 }
 
 pub trait ImpurityMetric<Target> {
-    fn push(&mut self, item: Target, weight: LabelWeight);
-    fn pop(&mut self, item: Target, weight: LabelWeight);
+    fn push(&mut self, item: Target, weight: SampleWeight);
+    fn pop(&mut self, item: Target, weight: SampleWeight);
     fn impurity(&self) -> f64;
     fn split_impurity(&self, other: &Self) -> f64;
 }
@@ -27,7 +27,7 @@ pub trait WithClasses {
 
 impl ImpurityMetric<ClassTarget> for Gini {
     #[inline(always)]
-    fn push(&mut self, bin_index: ClassTarget, weight: LabelWeight) {
+    fn push(&mut self, bin_index: ClassTarget, weight: SampleWeight) {
         let weight = weight as u64;
         self.sum_squares += weight * (2 * self.bins[bin_index as usize] + weight);
         self.bins[bin_index as usize] += weight;
@@ -35,7 +35,7 @@ impl ImpurityMetric<ClassTarget> for Gini {
     }
 
     #[inline(always)]
-    fn pop(&mut self, bin_index: ClassTarget, weight: LabelWeight) {
+    fn pop(&mut self, bin_index: ClassTarget, weight: SampleWeight) {
         let weight = weight as u64;
         self.sum_squares =
             self.sum_squares + weight * weight - 2 * self.bins[bin_index as usize] * weight;
@@ -67,7 +67,7 @@ impl WithClasses for Gini {
 
 impl ImpurityMetric<f32> for Mse {
     #[inline(always)]
-    fn push(&mut self, y: f32, weight: LabelWeight) {
+    fn push(&mut self, y: f32, weight: SampleWeight) {
         let weight = weight as u64;
         let y = y as f64;
         let next_mean =
@@ -78,7 +78,7 @@ impl ImpurityMetric<f32> for Mse {
     }
 
     #[inline(always)]
-    fn pop(&mut self, y: f32, weight: LabelWeight) {
+    fn pop(&mut self, y: f32, weight: SampleWeight) {
         let weight = weight as u64;
         let y = y as f64;
 

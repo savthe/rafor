@@ -1,5 +1,5 @@
 use crate::{
-    config::EnsembleConfig, decision_tree::Trainset, DatasetView, LabelWeight, Weightable,
+    config::EnsembleConfig, decision_tree::Trainset, DatasetView, SampleWeight, Weightable,
     WEIGHT_MASK,
 };
 use rand::{rngs::SmallRng, Rng, SeedableRng};
@@ -62,7 +62,7 @@ where
     ensemble
 }
 
-fn bootstrap<T: Copy>(targets: &[T], rng: &mut SmallRng) -> (Vec<u32>, Vec<(T, LabelWeight)>) {
+fn bootstrap<T: Copy>(targets: &[T], rng: &mut SmallRng) -> (Vec<u32>, Vec<(T, SampleWeight)>) {
     let num_samples = targets.len();
     let mut weights: Vec<usize> = vec![0; num_samples];
     for _ in 0..num_samples {
@@ -72,12 +72,12 @@ fn bootstrap<T: Copy>(targets: &[T], rng: &mut SmallRng) -> (Vec<u32>, Vec<(T, L
 
     let amount = weights.iter().filter(|x| **x > 0).count();
     let mut samples: Vec<u32> = Vec::with_capacity(amount);
-    let mut weighted_targets: Vec<(T, LabelWeight)> = Vec::with_capacity(amount);
+    let mut weighted_targets: Vec<(T, SampleWeight)> = Vec::with_capacity(amount);
 
     for (i, &w) in weights.iter().enumerate() {
         if w > 0 {
             samples.push(i as u32);
-            weighted_targets.push((targets[i], (w as LabelWeight) & WEIGHT_MASK));
+            weighted_targets.push((targets[i], (w as SampleWeight) & WEIGHT_MASK));
         }
     }
 
