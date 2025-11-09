@@ -1,7 +1,7 @@
-use std::fs::read_to_string;
-use crate::prelude::*;
 use crate::dt;
+use crate::prelude::*;
 use crate::rf;
+use std::fs::read_to_string;
 
 #[test]
 fn test_classifier_tree_overfit_self() {
@@ -38,7 +38,9 @@ fn test_random_forest_classifier_overfit_self() {
     let predictor = rf::Classifier::fit(
         &samples,
         &targets,
-        rf::Classifier::default_config().with_max_depth(500).with_trees(100),
+        rf::Classifier::default_config()
+            .with_max_depth(500)
+            .with_trees(100),
     );
 
     let y_pred = predictor.predict(&samples, 8);
@@ -53,7 +55,9 @@ fn test_random_forest_classifier_depth10() {
     let predictor = rf::Classifier::fit(
         &x_train,
         &y_train,
-        rf::Classifier::default_config().with_max_depth(10).with_trees(100),
+        rf::Classifier::default_config()
+            .with_max_depth(10)
+            .with_trees(100),
     );
 
     let y_pred = predictor.predict(&x_pred, 8);
@@ -67,7 +71,9 @@ fn test_random_forest_classifier_depth10_self() {
     let predictor = rf::Classifier::fit(
         &samples,
         &targets,
-        rf::Classifier::default_config().with_max_depth(10).with_trees(100),
+        rf::Classifier::default_config()
+            .with_max_depth(10)
+            .with_trees(100),
     );
 
     let y_pred = predictor.predict(&samples, 8);
@@ -79,20 +85,34 @@ fn split_dataset<T: Copy>(x: &[f32], y: &[T]) -> (Vec<f32>, Vec<T>, Vec<f32>, Ve
     assert!(x.len() % y.len() == 0);
     let features = x.len() / y.len();
 
-    let x_train: Vec<f32> = x 
+    let x_train: Vec<f32> = x
         .chunks(features)
         .enumerate()
-        .filter(|(i, _)| i % 5 > 0) 
+        .filter(|(i, _)| i % 5 > 0)
         .flat_map(|(_, chunk)| chunk.iter().cloned())
         .collect();
-    let y_train: Vec<T> = y.iter().enumerate().filter(|(i, _)| i % 5 > 0).map(|(_, v)| *v).collect();
-    let x_pred: Vec<f32> = x 
+
+    let y_train: Vec<T> = y
+        .iter()
+        .enumerate()
+        .filter(|(i, _)| i % 5 > 0)
+        .map(|(_, v)| *v)
+        .collect();
+
+    let x_pred: Vec<f32> = x
         .chunks(features)
         .enumerate()
-        .filter(|(i, _)| i % 5 == 0) 
+        .filter(|(i, _)| i % 5 == 0)
         .flat_map(|(_, chunk)| chunk.iter().cloned())
         .collect();
-    let y_ref: Vec<T> = y.iter().enumerate().filter(|(i, _)| i % 5 == 0).map(|(_, v)| *v).collect();
+
+    let y_ref: Vec<T> = y
+        .iter()
+        .enumerate()
+        .filter(|(i, _)| i % 5 == 0)
+        .map(|(_, v)| *v)
+        .collect();
+
     (x_train, y_train, x_pred, y_ref)
 }
 
@@ -102,14 +122,16 @@ fn classifier_accuracy(v: &[i64], u: &[i64]) -> f64 {
 }
 
 fn load_wine_dataset() -> (Vec<f32>, Vec<i64>) {
+    const NUM_FEATURES: usize = 11;
+
     let lines: Vec<String> = read_to_string("datasets/winequality-red.csv")
         .unwrap()
         .lines()
         .map(|s| s.to_string())
         .collect();
+
     let mut samples: Vec<f32> = Vec::new();
     let mut targets: Vec<i64> = Vec::new();
-    const NUM_FEATURES: usize = 11;
 
     for line in lines.iter().skip(1) {
         let w: Vec<_> = line.split(";").collect();
