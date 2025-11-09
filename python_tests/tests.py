@@ -2,6 +2,7 @@ import sys
 
 from sklearn import tree
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import f1_score
 from sklearn.tree import DecisionTreeClassifier
 
 import pandas as pd
@@ -80,12 +81,25 @@ def random_forest_classifier_depth10():
     print("Accuracy:", classifier_accuracy(y_ref, y_pred))
 
 
+def random_forest_binary_classification():
+    print(sys._getframe().f_code.co_name, end='. ')
+    df = pd.read_csv('../datasets/magic04.data')
+    X = df.iloc[:, :-1]
+    y = df.iloc[:, -1]
+    X_train, y_train, X_pred, y_ref = split_dataset(X, y)
+    clf = RandomForestClassifier(random_state=42, max_depth=10, n_estimators=100)
+    clf.fit(X_train, y_train)
+    y_pred = clf.predict(X_pred)
+    print("F1-score:", f1_score(y_ref, y_pred, pos_label='h'))
+
+
 def run_tests():
     decision_tree_classifier_overfit_self()
     decision_tree_classifier_depth10()
     random_forest_classifier_overfit_self()
     random_forest_classifier_depth10()
     random_forest_classifier_depth10_self()
+    random_forest_binary_classification()
 
 
 if __name__ == "__main__":
