@@ -1,11 +1,10 @@
+import pandas as pd
 import sys
 
 from sklearn import tree
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import f1_score
 from sklearn.tree import DecisionTreeClassifier
-
-import pandas as pd
 
 
 def classifier_accuracy(u, v):

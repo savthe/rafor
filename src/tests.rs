@@ -120,9 +120,21 @@ fn random_forest_binary_classifier() {
 }
 
 fn f1score(pred: &[i64], target: &[i64]) -> f64 {
-    let tp = pred.iter().zip(target.iter()).filter(|&(p, t)| *p == 1 && *t == 1).count();
-    let fp = pred.iter().zip(target.iter()).filter(|&(p, t)| *p == 1 && *t == 0).count();
-    let fnn = pred.iter().zip(target.iter()).filter(|&(p, t)| *p == 0 && *t == 1).count();
+    let tp = pred
+        .iter()
+        .zip(target.iter())
+        .filter(|&(p, t)| *p == 1 && *t == 1)
+        .count();
+    let fp = pred
+        .iter()
+        .zip(target.iter())
+        .filter(|&(p, t)| *p == 1 && *t == 0)
+        .count();
+    let fnn = pred
+        .iter()
+        .zip(target.iter())
+        .filter(|&(p, t)| *p == 0 && *t == 1)
+        .count();
     let precision = tp as f64 / (tp as f64 + fp as f64);
     let recall = tp as f64 / (tp as f64 + fnn as f64);
     let f1 = 2. * precision * recall / (precision + recall);
