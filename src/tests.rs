@@ -1,9 +1,10 @@
 use std::fs::read_to_string;
 use crate::prelude::*;
 use crate::dt;
+use crate::rf;
 
 #[test]
-fn test_wine_classifier_overfit() {
+fn test_classifier_tree_overfit_self() {
     let (samples, targets) = load_wine_dataset();
     let predictor = dt::Classifier::fit(
         &samples,
@@ -11,9 +12,93 @@ fn test_wine_classifier_overfit() {
         dt::Classifier::default_config().with_max_depth(500),
     );
 
-    let predicts = predictor.predict(&samples);
-    let correct = targets.iter().zip(predicts.iter()).filter(|(x, y)| *x == *y).count();
-    assert_eq!(correct, targets.len());
+    let y_pred = predictor.predict(&samples);
+    let acc = classifier_accuracy(&y_pred, &targets);
+    assert!(acc == 1.0);
+}
+
+#[test]
+fn test_classifier_tree_depth10() {
+    let (samples, targets) = load_wine_dataset();
+    let (x_train, y_train, x_pred, y_ref) = split_dataset(&samples, &targets);
+    let predictor = dt::Classifier::fit(
+        &x_train,
+        &y_train,
+        dt::Classifier::default_config().with_max_depth(10),
+    );
+
+    let y_pred = predictor.predict(&x_pred);
+    let acc = classifier_accuracy(&y_pred, &y_ref);
+    assert!(acc >= 0.61);
+}
+
+#[test]
+fn test_random_forest_classifier_overfit_self() {
+    let (samples, targets) = load_wine_dataset();
+    let predictor = rf::Classifier::fit(
+        &samples,
+        &targets,
+        rf::Classifier::default_config().with_max_depth(500).with_trees(100),
+    );
+
+    let y_pred = predictor.predict(&samples, 8);
+    let acc = classifier_accuracy(&y_pred, &targets);
+    assert!(acc == 1.0);
+}
+
+#[test]
+fn test_random_forest_classifier_depth10() {
+    let (samples, targets) = load_wine_dataset();
+    let (x_train, y_train, x_pred, y_ref) = split_dataset(&samples, &targets);
+    let predictor = rf::Classifier::fit(
+        &x_train,
+        &y_train,
+        rf::Classifier::default_config().with_max_depth(10).with_trees(100),
+    );
+
+    let y_pred = predictor.predict(&x_pred, 8);
+    let acc = classifier_accuracy(&y_pred, &y_ref);
+    assert!(acc >= 0.67);
+}
+
+#[test]
+fn test_random_forest_classifier_depth10_self() {
+    let (samples, targets) = load_wine_dataset();
+    let predictor = rf::Classifier::fit(
+        &samples,
+        &targets,
+        rf::Classifier::default_config().with_max_depth(10).with_trees(100),
+    );
+
+    let y_pred = predictor.predict(&samples, 8);
+    let acc = classifier_accuracy(&y_pred, &targets);
+    assert!(acc >= 0.93);
+}
+
+fn split_dataset<T: Copy>(x: &[f32], y: &[T]) -> (Vec<f32>, Vec<T>, Vec<f32>, Vec<T>) {
+    assert!(x.len() % y.len() == 0);
+    let features = x.len() / y.len();
+
+    let x_train: Vec<f32> = x 
+        .chunks(features)
+        .enumerate()
+        .filter(|(i, _)| i % 5 > 0) 
+        .flat_map(|(_, chunk)| chunk.iter().cloned())
+        .collect();
+    let y_train: Vec<T> = y.iter().enumerate().filter(|(i, _)| i % 5 > 0).map(|(_, v)| *v).collect();
+    let x_pred: Vec<f32> = x 
+        .chunks(features)
+        .enumerate()
+        .filter(|(i, _)| i % 5 == 0) 
+        .flat_map(|(_, chunk)| chunk.iter().cloned())
+        .collect();
+    let y_ref: Vec<T> = y.iter().enumerate().filter(|(i, _)| i % 5 == 0).map(|(_, v)| *v).collect();
+    (x_train, y_train, x_pred, y_ref)
+}
+
+fn classifier_accuracy(v: &[i64], u: &[i64]) -> f64 {
+    assert!(v.len() == u.len());
+    v.iter().zip(u.iter()).filter(|(x, y)| x == y).count() as f64 / u.len() as f64
 }
 
 fn load_wine_dataset() -> (Vec<f32>, Vec<i64>) {
