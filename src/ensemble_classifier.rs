@@ -12,6 +12,7 @@ use serde::{Deserialize, Serialize};
 /// A random forest classifier.
 /// # Example
 /// ```
+/// use rafor::rf;
 /// let dataset = [0.7, 0.0, 0.8, 1.0, 0.7, 0.0];
 /// let targets = [1, 5, 1];
 /// let predictor = rf::Classifier::fit(&dataset, &targets, &rf::Classifier::default_config());
@@ -25,7 +26,7 @@ pub struct Classifier {
 }
 
 /// Configuration for ensemble classifier. Default values:
-/// ```
+/// ```ignore
 /// max_depth: usize::MAX,
 /// max_features: NumFeatures::SQRT,
 /// seed: 42,

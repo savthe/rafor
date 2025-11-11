@@ -11,6 +11,7 @@ use serde::{Deserialize, Serialize};
 /// A classifier tree.
 /// # Examples
 /// ```
+/// use rafor::dt;
 /// let dataset = [0.7, 0.0, 0.8, 1.0, 0.7, 0.0];
 /// let targets = [1, 5, 1];
 /// let predictor = dt::Classifier::fit(&dataset, &targets, &dt::Classifier::default_config());
@@ -24,7 +25,7 @@ pub struct Classifier {
 }
 
 /// A training configuration for tree classifier. Default values:
-/// ```
+/// ```ignore
 /// max_depth: usize::MAX,
 /// max_features: NumFeatures::NUMBER(usize::MAX),
 /// seed: 42,
@@ -111,3 +112,40 @@ impl ClassDecode for Classifier {
         self.classes_map.get_decode_table()
     }
 }
+
+// #[rustfmt::skip]
+// #[test]
+// fn overfit() {
+//     let dataset = [
+//         0.6, 1.0, 
+//         0.7, 0.0,
+//         0.8, 1.0, 
+//         0.4, -1.0, 
+//         0.4, -2.0, 
+//         0.4, 1.0, 
+//         0.4, 2.0 
+//     ];
+//
+//     let targets = [1, 1, 1, 0, 0, 1, 1];
+//     let predictor = Classifier::fit(&dataset, &targets, &Classifier::default_config());
+//     let predictions = predictor.predict(&dataset);
+//     assert_eq!(&predictions, &[1, 1, 1, 0, 0, 1, 1]);
+// }
+//
+// #[rustfmt::skip]
+// #[test]
+// fn proba() {
+//     let dataset = [
+//         0.1, 0.1, 
+//         0.2, 0.2, 
+//         0.1, 0.1,
+//         0.1, 0.1, 
+//         0.1, 0.1, 
+//     ];
+//
+//     let targets = [0, 2, 0, 0, 1];
+//     let predictor = Classifier::fit(&dataset, &targets, &Classifier::default_config());
+//
+//     assert_eq!(predictor.proba(&[0.1, 0.1]), &[0.75, 0.25, 0.0]);
+//     assert_eq!(predictor.proba(&[0.2, 0.2]), &[0.0, 0.0, 1.0]);
+// }

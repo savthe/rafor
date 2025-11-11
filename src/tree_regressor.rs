@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 /// A regression tree.
 /// # Example
 /// ```
+/// use rafor::dt;
 /// let dataset = [0.7, 0.0, 0.8, 1.0, 0.7, 0.0];
 /// let targets = [1.0, 0.5, 0.2];
 /// let predictor = dt::Regressor::fit(&dataset, &targets, &dt::Regressor::default_config());
@@ -20,7 +21,7 @@ pub struct Regressor {
 }
 
 /// Configuration for tree regressor. Default values:
-/// ```
+/// ```ignore
 /// max_depth: usize::MAX,
 /// max_features: NumFeatures::NUMBER(usize::MAX),
 /// metric: Metric::MSE,
