@@ -15,11 +15,11 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Default, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct RegressorModel {
-    tree: DecisionTree<()>,
+    tree: DecisionTree,
 }
 
 impl RegressorModel {
-    pub fn predict(&self, dataset: &DatasetView) -> Vec<FloatTarget> {
+    pub fn predict(&self, dataset: &DatasetView) -> Vec<f32> {
         dataset.samples().map(|s| self.predict_one(s)).collect()
     }
 
@@ -29,8 +29,8 @@ impl RegressorModel {
     }
 
     #[inline(always)]
-    pub fn predict_one(&self, sample: &[f32]) -> FloatTarget {
-        self.tree.predict(sample).0
+    pub fn predict_one(&self, sample: &[f32]) -> f32 {
+        f32::from_bits(self.tree.predict(sample))
     }
 
     pub fn fit(tv: TrainView<FloatTarget>, config: &TrainConfig) -> RegressorModel {
@@ -38,16 +38,16 @@ impl RegressorModel {
             tree: DecisionTree::new(tv.dataview.num_features() as u16),
         };
         let mut space = TrainSpace::<(f32, SampleWeight)>::new(tv);
-        let ranges = match config.metric {
+        let (tree, ranges) = match config.metric {
             Metric::MSE => trainer::fit(
                 &mut space,
-                &mut tr.tree,
                 config.clone(),
                 MseSplitter::new(config.min_samples_leaf),
             ),
             _ => panic!("Metric is not supported for regressor tree"),
         };
 
+        tr.tree = tree;
         for (node, range) in ranges.iter() {
             let targets = &space.targets(&range);
             let mut s: f32 = 0.;
@@ -56,7 +56,9 @@ impl RegressorModel {
                 s += x * w as f32;
                 n += w;
             }
-            tr.tree.set_node_threshold(*node, s / n as f32);
+            let value = s / n as f32;
+            //tr.tree.set_leaf_threshold(&node, s / n as f32);
+            tr.tree.set_leaf_value(&node, value.to_bits());
         }
 
         tr
