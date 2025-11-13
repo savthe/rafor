@@ -1,4 +1,4 @@
-use super::decision_tree;
+use super::decision_tree::{DecisionTree, NodeHandle};
 use super::splitter::Splitter;
 use super::TrainView;
 use crate::{
@@ -36,10 +36,9 @@ struct Split {
 // Trainer gets mutable refs to the tree it should train, and the training space. Target is at this
 // point is generic, but actually for random forest, it is a weighted target. A splitter knows how
 // to handle it, trainer just rearranges targets and passes them to splitter.
-struct Trainer<'a, 'b, Target, Tree, S>
+struct Trainer<'a, 'b, Target, S>
 where
     Target: Copy,
-    Tree: decision_tree::Splittable,
     S: Splitter<Target>,
 {
     features_perm: Vec<usize>,
@@ -47,43 +46,44 @@ where
     rng: Option<SmallRng>,
     conf: TrainConfig,
     space: &'a mut TrainSpace<'b, Target>,
-    tree: &'a mut Tree,
+    tree: DecisionTree,
     splitter: S,
 }
 
-pub fn fit<Target, Tree>(
+pub fn fit<Target>(
     space: &mut TrainSpace<Target>,
-    tree: &mut Tree,
     conf: TrainConfig,
     splitter: impl Splitter<Target>,
-) -> Vec<(usize, IndexRange)>
+) -> (DecisionTree, Vec<(NodeHandle, IndexRange)>)
 where
     Target: Copy,
-    Tree: decision_tree::Splittable,
 {
     let (max_features, rng) = conf.setup_max_features(space.num_features());
+    let num_features = space.num_features();
     let mut trainer = Trainer {
         max_features,
         rng,
         features_perm: (0..space.num_features()).collect(),
         conf,
         space,
-        tree,
+        tree: DecisionTree::new(num_features as u16),
         splitter,
     };
 
-    trainer.fit()
+    let ranges = trainer.fit();
+    (trainer.tree, ranges)
 }
 
-impl<'a, 'b, Target, Tree, S> Trainer<'a, 'b, Target, Tree, S>
+impl<'a, 'b, Target, S> Trainer<'a, 'b, Target, S>
 where
     Target: Copy,
-    Tree: decision_tree::Splittable,
     S: Splitter<Target>,
 {
-    pub fn fit(&mut self) -> Vec<(usize, IndexRange)> {
-        let mut stack: Vec<(usize, IndexRange, usize)> = vec![(0, 0..self.space.size(), 0); 1];
-        let mut ranges: Vec<(usize, IndexRange)> = Vec::new();
+    pub fn fit(&mut self) -> Vec<(NodeHandle, IndexRange)> {
+        let mut stack: Vec<(NodeHandle, IndexRange, usize)> =
+            vec![(self.tree.root(), 0..self.space.size(), 0); 1];
+
+        let mut ranges: Vec<(NodeHandle, IndexRange)> = Vec::new();
         while let Some((node, range, depth)) = stack.pop() {
             let mut split = Split::default();
             if depth < self.conf.max_depth
@@ -97,7 +97,7 @@ where
                 self.space.split(&range, split.feature, split.threshold);
                 let (left_range, right_range) = (range.start..split.pivot, split.pivot..range.end);
                 let (left_node, right_node) =
-                    self.tree.split(node, split.feature as u16, split.threshold);
+                    self.tree.split(&node, split.feature as u16, split.threshold);
 
                 stack.push((left_node, left_range, depth + 1));
                 stack.push((right_node, right_range, depth + 1));

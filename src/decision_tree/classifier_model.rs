@@ -15,7 +15,7 @@ use serde::{Deserialize, Serialize};
 pub struct ClassifierModel {
     proba: Vec<f32>,
     num_classes: usize,
-    tree: DecisionTree<ClassTarget>,
+    tree: DecisionTree,
 }
 
 impl ClassifierModel {
@@ -38,7 +38,7 @@ impl ClassifierModel {
 
     #[inline(always)]
     pub fn predict_one(&self, sample: &[f32]) -> &[f32] {
-        let i = self.tree.predict(sample).1 as usize * self.num_classes;
+        let i = self.tree.predict(sample) as usize * self.num_classes;
         &self.proba[i..i + self.num_classes]
     }
 
@@ -69,16 +69,16 @@ impl ClassifierModel {
 
         let mut space: TrainSpace<P> = TrainSpace::new(tv);
 
-        let ranges = match cfg.metric {
+        let (tree, ranges) = match cfg.metric {
             Metric::GINI => trainer::fit(
                 &mut space,
-                &mut tr.tree,
                 cfg.clone(),
                 GiniSplitter::new(num_cls, cfg.min_samples_leaf),
             ),
             _ => panic!("Metric is not supported for classifier tree"),
         };
 
+        tr.tree = tree;
         tr.proba.resize(tr.num_classes * ranges.len(), 0.);
         let mut offset = 0;
         for ((node, range), bins) in ranges.iter().zip(tr.proba.chunks_mut(tr.num_classes)) {
@@ -95,7 +95,7 @@ impl ClassifierModel {
                 *x /= count as f32;
             }
 
-            tr.tree.set_node_value(*node, offset);
+            tr.tree.set_leaf_value(&node, offset);
             offset += 1;
         }
         tr
