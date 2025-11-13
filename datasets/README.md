@@ -5,3 +5,6 @@ The datasets are used for unit-testing.
 
 ## MAGIC Gamma Telescope
 `magic04.data`. Bock, R. (2004). MAGIC Gamma Telescope [Dataset]. UCI Machine Learning Repository. https://doi.org/10.24432/C52C8B.
+
+## Combined Cycle Power Plant
+`Folds5x2_pp.csv`. Tfekci, P. & Kaya, H. (2014). Combined Cycle Power Plant [Dataset]. UCI Machine Learning Repository. https://doi.org/10.24432/C5002N.
