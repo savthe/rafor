@@ -2,7 +2,9 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq)]
 enum Child {
-    LEFT, RIGHT, ROOT
+    LEFT,
+    RIGHT,
+    ROOT,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -13,20 +15,20 @@ pub struct NodeHandle {
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 struct InternalNode {
-    feature: u16, 
-    left_leaf: bool,
-    right_leaf: bool,
+    feature: u16,
+    left_is_leaf: bool,
+    right_is_leaf: bool,
     threshold: f32,
     left: u32,
-    right: u32
+    right: u32,
 }
 
 impl Default for InternalNode {
     fn default() -> Self {
         Self {
             feature: 0,
-            left_leaf: true,
-            right_leaf: true,
+            left_is_leaf: true,
+            right_is_leaf: true,
             threshold: 0.0,
             left: 0,
             right: 0,
@@ -44,7 +46,7 @@ impl DecisionTree {
     pub fn new(num_features: u16) -> Self {
         Self {
             nodes: Vec::new(),
-            num_features
+            num_features,
         }
     }
 
@@ -56,11 +58,16 @@ impl DecisionTree {
         }
     }
 
-    pub fn split(&mut self, handle: &NodeHandle, feature: u16, threshold: f32) -> (NodeHandle, NodeHandle) {
+    pub fn split(
+        &mut self,
+        handle: &NodeHandle,
+        feature: u16,
+        threshold: f32,
+    ) -> (NodeHandle, NodeHandle) {
         let new_node = InternalNode {
             feature,
-            left_leaf: true,
-            right_leaf: true,
+            left_is_leaf: true,
+            right_is_leaf: true,
             threshold,
             left: 0,
             right: 0,
@@ -72,17 +79,23 @@ impl DecisionTree {
         match handle.child {
             Child::LEFT => {
                 parent.left = new_index;
-                parent.left_leaf = false;
-            },
+                parent.left_is_leaf = false;
+            }
             Child::RIGHT => {
                 parent.right = new_index;
-                parent.right_leaf = false;
+                parent.right_is_leaf = false;
             }
             _ => {}
         };
 
-        let left_handle = NodeHandle { parent: new_index, child: Child::LEFT };
-        let right_handle = NodeHandle { parent: new_index, child: Child::RIGHT};
+        let left_handle = NodeHandle {
+            parent: new_index,
+            child: Child::LEFT,
+        };
+        let right_handle = NodeHandle {
+            parent: new_index,
+            child: Child::RIGHT,
+        };
         (left_handle, right_handle)
     }
 
@@ -95,7 +108,7 @@ impl DecisionTree {
         match handle.child {
             Child::LEFT => {
                 self.nodes[handle.parent as usize].left = value;
-            },
+            }
             Child::RIGHT => {
                 self.nodes[handle.parent as usize].right = value;
             }
@@ -104,9 +117,9 @@ impl DecisionTree {
                     feature: 0,
                     left: value,
                     right: value,
-                    left_leaf: true,
-                    right_leaf: true,
-                    threshold: 0.0
+                    left_is_leaf: true,
+                    right_is_leaf: true,
+                    threshold: 0.0,
                 };
                 self.nodes = vec![root];
             }
@@ -116,22 +129,19 @@ impl DecisionTree {
     pub fn predict(&self, sample: &[f32]) -> u32 {
         // FIXME if tree is empty?
         let mut id = 0;
-        loop {
+        let mut is_leaf = false;
+
+        while !is_leaf {
             let node = &self.nodes[id as usize];
             if sample[node.feature as usize] <= node.threshold {
                 id = node.left;
-                if node.left_leaf {
-                    break;
-                }
-                
+                is_leaf = node.left_is_leaf;
             } else {
                 id = node.right;
-                if node.right_leaf {
-                    break;
-                }
+                is_leaf = node.right_is_leaf;
             }
         }
-        
+
         id as u32
     }
 }
