@@ -122,7 +122,7 @@ def random_forest_regressor_overfit_self():
     df = pd.read_csv('../datasets/Folds5x2_pp.csv')
     X = df.iloc[:, :-1]
     y = df.iloc[:, -1]
-    clf = RandomForestRegressor(n_estimators=100, max_depth=1000)
+    clf = RandomForestRegressor(n_estimators=25, max_depth=1000)
     clf.fit(X, y)
     y_pred = clf.predict(X)
     print("Error:", mean_squared_error(y, y_pred))
