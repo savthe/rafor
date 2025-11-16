@@ -203,7 +203,6 @@ fn mean_squared_error(v: &[f32], u: &[f32]) -> f64 {
         .map(|(&x, &y)| (x - y) as f64 * (x - y) as f64)
         .sum::<f64>()
         / v.len() as f64;
-    println!("MSE: {}", mse);
     mse
 }
 
