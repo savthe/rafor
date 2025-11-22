@@ -1,76 +1,149 @@
 use serde::{Deserialize, Serialize};
 
-pub trait Splittable {
-    fn split(&mut self, node: usize, feature: u16, threshold: f32) -> (usize, usize);
+#[derive(Clone, Debug, PartialEq)]
+enum Child {
+    LEFT,
+    RIGHT,
+    ROOT,
 }
 
-#[derive(Default, Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct Node<T> {
-    value: T,
+#[derive(Clone, Debug, PartialEq)]
+pub struct NodeHandle {
+    parent: u32,
+    child: Child,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+struct InternalNode {
+    left: u32,
+    right: u32,
     threshold: f32,
     feature: u16,
-    left: usize,
+    left_is_leaf: bool,
+    right_is_leaf: bool,
+}
+
+impl Default for InternalNode {
+    fn default() -> Self {
+        Self {
+            left: 0,
+            right: 0,
+            threshold: 0.0,
+            feature: 0,
+            left_is_leaf: true,
+            right_is_leaf: true,
+        }
+    }
 }
 
 #[derive(Default, Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct DecisionTree<T: Default + Copy> {
-    tree: Vec<Node<T>>,
-    num_features: usize,
+pub struct DecisionTree {
+    nodes: Vec<InternalNode>,
+    num_features: u16,
 }
 
-impl<T: Default + Copy> DecisionTree<T> {
+impl DecisionTree {
     pub fn new(num_features: u16) -> Self {
         Self {
-            tree: vec![Node::default(); 1],
-            num_features: num_features as usize,
+            nodes: Vec::new(),
+            num_features,
         }
+    }
+
+    pub fn root(&self) -> NodeHandle {
+        assert!(self.nodes.is_empty());
+        NodeHandle {
+            parent: 0,
+            child: Child::ROOT,
+        }
+    }
+
+    pub fn split(
+        &mut self,
+        handle: &NodeHandle,
+        feature: u16,
+        threshold: f32,
+    ) -> (NodeHandle, NodeHandle) {
+        let new_node = InternalNode {
+            feature,
+            left_is_leaf: true,
+            right_is_leaf: true,
+            threshold,
+            left: 0,
+            right: 0,
+        };
+        let new_index = self.nodes.len() as u32;
+        self.nodes.push(new_node);
+
+        let parent = &mut self.nodes[handle.parent as usize];
+        match handle.child {
+            Child::LEFT => {
+                parent.left = new_index;
+                parent.left_is_leaf = false;
+            }
+            Child::RIGHT => {
+                parent.right = new_index;
+                parent.right_is_leaf = false;
+            }
+            _ => {}
+        };
+
+        let left_handle = NodeHandle {
+            parent: new_index,
+            child: Child::LEFT,
+        };
+        let right_handle = NodeHandle {
+            parent: new_index,
+            child: Child::RIGHT,
+        };
+        (left_handle, right_handle)
     }
 
     #[inline(always)]
     pub fn num_features(&self) -> usize {
-        self.num_features
+        self.num_features as usize
     }
 
-    pub fn set_node_value(&mut self, node: usize, value: T) {
-        self.tree[node].value = value;
+    pub fn set_leaf_value(&mut self, handle: &NodeHandle, value: u32) {
+        match handle.child {
+            Child::LEFT => {
+                self.nodes[handle.parent as usize].left = value;
+            }
+            Child::RIGHT => {
+                self.nodes[handle.parent as usize].right = value;
+            }
+            Child::ROOT => {
+                // If tree has only one node (a leaf), make single internal node with identical
+                // leaves.
+                let root = InternalNode {
+                    left: value,
+                    right: value,
+                    threshold: 0.0,
+                    feature: 0,
+                    left_is_leaf: true,
+                    right_is_leaf: true,
+                };
+                self.nodes = vec![root];
+            }
+        };
     }
 
-    pub fn set_node_threshold(&mut self, node: usize, threshold: f32) {
-        self.tree[node].threshold = threshold;
-    }
-
-    pub fn is_leaf(&self, index: usize) -> bool {
-        self.tree[index].left == 0
-    }
-
-    pub fn predict(&self, sample: &[f32]) -> (f32, T) {
+    pub fn predict(&self, sample: &[f32]) -> u32 {
+        // FIXME if tree is empty?
         let mut id = 0;
-        while self.tree[id].left > 0 {
-            let node = &self.tree[id];
+        let mut is_leaf = false;
+
+        while !is_leaf {
+            let node = &self.nodes[id as usize];
             if sample[node.feature as usize] <= node.threshold {
-                id = node.left
+                id = node.left;
+                is_leaf = node.left_is_leaf;
             } else {
-                id = node.left + 1
+                id = node.right;
+                is_leaf = node.right_is_leaf;
             }
         }
-        (self.tree[id].threshold, self.tree[id].value)
-    }
-}
 
-impl<T: Default + Copy> Splittable for DecisionTree<T> {
-    fn split(&mut self, index: usize, feature: u16, threshold: f32) -> (usize, usize) {
-        if !self.is_leaf(index) {
-            panic!("Can't split non-leaf node")
-        }
-        self.tree[index].feature = feature;
-        self.tree[index].threshold = threshold;
-
-        let left = self.tree.len();
-        self.tree.push(Node::default());
-        self.tree.push(Node::default());
-
-        let node = &mut self.tree[index];
-        node.left = left;
-        (left, left + 1)
+        id as u32
     }
 }
