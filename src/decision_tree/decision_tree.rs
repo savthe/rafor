@@ -15,23 +15,23 @@ pub struct NodeHandle {
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 struct InternalNode {
+    left: u32,
+    right: u32,
+    threshold: f32,
     feature: u16,
     left_is_leaf: bool,
     right_is_leaf: bool,
-    threshold: f32,
-    left: u32,
-    right: u32,
 }
 
 impl Default for InternalNode {
     fn default() -> Self {
         Self {
+            left: 0,
+            right: 0,
+            threshold: 0.0,
             feature: 0,
             left_is_leaf: true,
             right_is_leaf: true,
-            threshold: 0.0,
-            left: 0,
-            right: 0,
         }
     }
 }
@@ -113,13 +113,15 @@ impl DecisionTree {
                 self.nodes[handle.parent as usize].right = value;
             }
             Child::ROOT => {
+                // If tree has only one node (a leaf), make single internal node with identical
+                // leaves.
                 let root = InternalNode {
-                    feature: 0,
                     left: value,
                     right: value,
+                    threshold: 0.0,
+                    feature: 0,
                     left_is_leaf: true,
                     right_is_leaf: true,
-                    threshold: 0.0,
                 };
                 self.nodes = vec![root];
             }
