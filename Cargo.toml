@@ -8,7 +8,7 @@ description = "Fast Random Forest library."
 readme = "README.md"
 changelog = "CHANGELOG.md"
 repository = "https://github.com/savthe/rafor/"
-exclude = ["src/main.rs", "datasets"]
+exclude = ["src/main.rs"]
 keywords = ["ml", "random-forest", "decision-tree"]
 categories = ["algorithms", "data-structures"]
 
