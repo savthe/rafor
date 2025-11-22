@@ -24,7 +24,8 @@ pub struct Classifier {
     classes_map: ClassesMapping,
 }
 
-/// A training configuration for tree classifier. Default values:
+/// A training configuration for tree classifier.
+/// # Default values:
 /// ```ignore
 /// max_depth: usize::MAX,
 /// max_features: NumFeatures::NUMBER(usize::MAX),

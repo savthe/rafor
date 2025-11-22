@@ -25,7 +25,8 @@ pub struct Classifier {
     classes_map: ClassesMapping,
 }
 
-/// Configuration for ensemble classifier. Default values:
+/// Configuration for ensemble classifier.
+/// # Default values:
 /// ```ignore
 /// max_depth: usize::MAX,
 /// max_features: NumFeatures::SQRT,

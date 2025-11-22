@@ -19,7 +19,8 @@ pub struct Regressor {
     ensemble: Vec<RegressorModel>,
 }
 
-/// Configuration for ensemble regressor. Default values:
+/// Configuration for ensemble regressor.
+/// # Default values:
 /// ```ignore
 /// max_depth: usize::MAX,
 /// max_features: NumFeatures::NUMBER(usize::MAX),

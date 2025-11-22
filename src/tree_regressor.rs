@@ -20,7 +20,8 @@ pub struct Regressor {
     regressor: RegressorModel,
 }
 
-/// Configuration for tree regressor. Default values:
+/// Configuration for tree regressor.
+/// # Default values:
 /// ```ignore
 /// max_depth: usize::MAX,
 /// max_features: NumFeatures::NUMBER(usize::MAX),
