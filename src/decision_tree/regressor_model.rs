@@ -57,7 +57,6 @@ impl RegressorModel {
                 n += w;
             }
             let value = s / n as f32;
-            //tr.tree.set_leaf_threshold(&node, s / n as f32);
             tr.tree.set_leaf_value(&node, value.to_bits());
         }
 
