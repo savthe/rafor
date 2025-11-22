@@ -12,7 +12,7 @@ pub struct DatasetView<'a> {
 }
 
 impl Dataset {
-    pub fn as_view(&self) -> DatasetView {
+    pub fn as_view(&self) -> DatasetView<'_> {
         DatasetView {
             data: &self.data,
             num_features: self.num_features,

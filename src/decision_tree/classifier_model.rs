@@ -2,7 +2,6 @@ use super::splitter::GiniSplitter;
 use super::trainer;
 use super::DecisionTree;
 use super::TrainView;
-use crate::dataset::Dataset;
 use crate::{
     config::{Metric, TrainConfig},
     labels::*,
