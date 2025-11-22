@@ -10,6 +10,9 @@
   than `2^32`, Rafor checks their maximum values and may combine class and sample weight into single
   4 byte integer to sort tuples `(feature_value, packed_class_with_weight)`. This gives faster
   training of classification trees.
+* Decision tree size is improved. Each node contained 2 usize pointers to node children. The
+  left and right children are placed sequentially, thus a single pointer is enough. This saves 8
+  bytes per node.
 
 ## v0.1.1
 * Added training options: `min_samples_split` and `min_samples_leaf`.
