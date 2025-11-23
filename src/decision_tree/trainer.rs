@@ -33,9 +33,6 @@ struct Split {
     threshold: f32,
 }
 
-// Trainer gets mutable refs to the tree it should train, and the training space. Target is at this
-// point is generic, but actually for random forest, it is a weighted target. A splitter knows how
-// to handle it, trainer just rearranges targets and passes them to splitter.
 struct Trainer<'a, 'b, Target, S>
 where
     Target: Copy,
@@ -157,9 +154,8 @@ where
         feature: usize,
     ) -> Vec<(f32, Target, SampleWeight)> {
         let mut v = proto.clone();
-        for (x, y) in v.iter_mut().zip(self.space.samples(&range).iter()) {
-            //TODO make it pretty
-            x.0 = self.space.feature_val(*y, feature);
+        for ((x, _, _), y) in v.iter_mut().zip(self.space.samples(&range).iter()) {
+            *x = self.space.feature_val(*y, feature);
         }
         radsort::sort_by_key(&mut v, |k| k.0);
         v
