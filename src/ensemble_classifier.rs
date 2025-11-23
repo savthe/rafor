@@ -1,11 +1,6 @@
 use crate::{
-    ensemble_predictor,
-    ensemble_trainer,
-    classify,
-    config::*,
-    config_builders::*,
-    TrainView, decision_tree::ClassifierModel,
-    ClassDecode, labels::ClassTarget, ClassesMapping, Dataset, DatasetView,
+    classify, config::*, config_builders::*, decision_tree::ClassifierModel, ensemble_predictor,
+    ensemble_trainer, ClassDecode, ClassTarget, ClassesMapping, Dataset, DatasetView, TrainView,
 };
 use serde::{Deserialize, Serialize};
 

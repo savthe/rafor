@@ -1,7 +1,7 @@
 use super::{decision_tree::RegressorModel, TrainView};
 use crate::config::{Metric, NumFeatures, TrainConfig};
 use crate::config_builders::*;
-use crate::{labels::FloatTarget, Dataset, DatasetView};
+use crate::{Dataset, DatasetView, FloatTarget};
 
 use serde::{Deserialize, Serialize};
 

@@ -4,8 +4,7 @@ use super::DecisionTree;
 use super::TrainView;
 use crate::{
     config::{Metric, TrainConfig},
-    labels::*,
-    DatasetView,
+    ClassTarget, DatasetView, SampleWeight,
 };
 use trainer::TrainSpace;
 
@@ -43,31 +42,13 @@ impl ClassifierModel {
     }
 
     pub fn fit(tv: TrainView<ClassTarget>, num_cls: usize, cfg: &TrainConfig) -> ClassifierModel {
-        let max_weight = *tv.weights.iter().max().unwrap();
-
-        if num_cls < (1 << 8) && max_weight < (1 << 24) {
-            Self::fit_internal::<DenseClass<8>>(tv, num_cls, cfg)
-        } else if num_cls < (1 << 16) && max_weight < (1 << 16) {
-            Self::fit_internal::<DenseClass<16>>(tv, num_cls, cfg)
-        } else if num_cls < (1 << 24) && max_weight < (1 << 8) {
-            Self::fit_internal::<DenseClass<24>>(tv, num_cls, cfg)
-        } else {
-            Self::fit_internal::<(ClassTarget, SampleWeight)>(tv, num_cls, cfg)
-        }
-    }
-
-    pub fn fit_internal<P: Weighted<ClassTarget>>(
-        tv: TrainView<ClassTarget>,
-        num_cls: usize,
-        cfg: &TrainConfig,
-    ) -> ClassifierModel {
         let mut tr = ClassifierModel {
             proba: Vec::new(),
             num_classes: num_cls,
             tree: DecisionTree::new(tv.dataview.num_features() as u16),
         };
 
-        let mut space: TrainSpace<P> = TrainSpace::new(tv);
+        let mut space: TrainSpace<ClassTarget> = TrainSpace::new(tv);
 
         let (tree, ranges) = match cfg.metric {
             Metric::GINI => trainer::fit(
@@ -85,8 +66,7 @@ impl ClassifierModel {
             let targets = &space.targets(&range);
 
             let mut count = 0;
-            for t in targets.iter() {
-                let (x, w) = t.unweight();
+            for &(x, w) in targets.iter() {
                 bins[x as usize] += w as f32;
                 count += w;
             }

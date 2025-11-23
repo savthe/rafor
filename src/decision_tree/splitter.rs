@@ -1,5 +1,6 @@
+use crate::{ClassTarget, FloatTarget, SampleWeight};
+
 use super::metrics::*;
-use crate::labels::*;
 
 #[derive(Default)]
 pub struct Position {
@@ -10,11 +11,11 @@ pub struct Position {
 pub trait Splitter<T> {
     // Calls before series of find_split calls for given samples range, but with different feature
     // orderings. Returns true if given range is not pure.
-    fn prepare(&mut self, targets: &[T]) -> bool;
+    fn prepare(&mut self, targets: &[(T, SampleWeight)]) -> bool;
 
     // Finds split point with impurity lower than upper_impurity. Data is a slice of pairs of some
     // feature value and weighted target.
-    fn find_split(&self, data: &[(f32, T)], upper_impurity: f64) -> Position;
+    fn find_split(&self, data: &[(f32, T, SampleWeight)], upper_impurity: f64) -> Position;
 }
 
 pub struct GiniSplitter {
@@ -47,26 +48,25 @@ impl MseSplitter {
     }
 }
 
-impl<U: Weighted<ClassTarget>> Splitter<U> for GiniSplitter {
-    fn prepare(&mut self, targets: &[U]) -> bool {
+impl Splitter<ClassTarget> for GiniSplitter {
+    fn prepare(&mut self, targets: &[(ClassTarget, SampleWeight)]) -> bool {
         let mut gini = Gini::with_classes(self.num_classes);
         // TODO compute this without push.
-        for u in targets.iter() {
-            let (label, weight) = u.unweight();
+        for &(label, weight) in targets.iter() {
             gini.push(label, weight);
         }
         self.range_imp = gini;
         !self.range_imp.pure()
     }
 
-    fn find_split(&self, data: &[(f32, U)], upper_imp: f64) -> Position {
+    fn find_split(&self, data: &[(f32, ClassTarget, SampleWeight)], upper_imp: f64) -> Position {
         let left = Gini::with_classes(self.num_classes);
         let right = self.range_imp.clone();
         find_split(left, right, data, upper_imp, self.min_samples_leaf)
     }
 }
 
-impl Splitter<(FloatTarget, SampleWeight)> for MseSplitter {
+impl Splitter<FloatTarget> for MseSplitter {
     fn prepare(&mut self, targets: &[(FloatTarget, SampleWeight)]) -> bool {
         let mut mse = Mse::default();
         for &(label, weight) in targets.iter() {
@@ -76,28 +76,27 @@ impl Splitter<(FloatTarget, SampleWeight)> for MseSplitter {
         !self.range_imp.pure()
     }
 
-    fn find_split(&self, data: &[(f32, (FloatTarget, SampleWeight))], upper_imp: f64) -> Position {
+    fn find_split(&self, data: &[(f32, FloatTarget, SampleWeight)], upper_imp: f64) -> Position {
         let left = Mse::default();
         let right = self.range_imp.clone();
         find_split(left, right, data, upper_imp, self.min_samples_leaf)
     }
 }
 
-fn find_split<T: Copy, U: Weighted<T>, I: ImpurityMetric<T>>(
+fn find_split<T: Copy, I: ImpurityMetric<T>>(
     mut left: I,
     mut right: I,
-    data: &[(f32, U)],
+    data: &[(f32, T, SampleWeight)],
     upper_imp: f64,
     min_samples_leaf: usize,
 ) -> Position {
     let mut split = Position::default();
     split.impurity = upper_imp;
     for i in 0..data.len() - min_samples_leaf {
-        let (value, t) = &data[i];
-        let (label, weight) = t.unweight();
-        left.push(label, weight);
-        right.pop(label, weight);
-        if *value < data[i + 1].0
+        let &(value, target, weight) = &data[i];
+        left.push(target, weight);
+        right.pop(target, weight);
+        if value < data[i + 1].0
             && i + 1 >= min_samples_leaf
             && left.split_impurity(&right) < split.impurity
         {

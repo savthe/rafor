@@ -78,13 +78,16 @@ mod ensemble_classifier;
 mod ensemble_predictor;
 mod ensemble_regressor;
 mod ensemble_trainer;
-mod labels;
 mod tree_classifier;
 mod tree_regressor;
 use argminmax::ArgMinMax;
 use classes_mapping::{ClassDecode, ClassesMapping};
 use dataset::{Dataset, DatasetView};
 use decision_tree::TrainView;
+
+type ClassTarget = u32;
+type FloatTarget = f32;
+type SampleWeight = u32;
 
 type IndexRange = std::ops::Range<usize>;
 
@@ -117,4 +120,3 @@ fn classify(proba: &[f32], mapping: &ClassesMapping) -> Vec<i64> {
 
 #[cfg(test)]
 mod tests;
-

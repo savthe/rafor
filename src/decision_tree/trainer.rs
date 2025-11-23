@@ -1,9 +1,9 @@
 use super::decision_tree::{DecisionTree, NodeHandle};
 use super::splitter::Splitter;
 use super::TrainView;
+use crate::SampleWeight;
 use crate::{
     config::{NumFeatures, TrainConfig},
-    labels::*,
     DatasetView, IndexRange,
 };
 use radsort;
@@ -97,7 +97,8 @@ where
                 self.space.split(&range, split.feature, split.threshold);
                 let (left_range, right_range) = (range.start..split.pivot, split.pivot..range.end);
                 let (left_node, right_node) =
-                    self.tree.split(&node, split.feature as u16, split.threshold);
+                    self.tree
+                        .split(&node, split.feature as u16, split.threshold);
 
                 stack.push((left_node, left_range, depth + 1));
                 stack.push((right_node, right_range, depth + 1));
@@ -117,7 +118,8 @@ where
         }
 
         let mut best_impurity = f64::INFINITY;
-        let proto: Vec<(f32, Target)> = targets.iter().map(|t| (0., *t)).collect();
+        let proto: Vec<(f32, Target, SampleWeight)> =
+            targets.iter().map(|t| (0., t.0, t.1)).collect();
         self.prepare_features();
 
         for (idx, &feature) in self.features_perm.iter().enumerate() {
@@ -150,38 +152,36 @@ where
 
     fn prepare_samples(
         &self,
-        proto: &Vec<(f32, Target)>,
+        proto: &Vec<(f32, Target, SampleWeight)>,
         range: &IndexRange,
         feature: usize,
-    ) -> Vec<(f32, Target)> {
+    ) -> Vec<(f32, Target, SampleWeight)> {
         let mut v = proto.clone();
-        for ((x, _), y) in v.iter_mut().zip(self.space.samples(&range).iter()) {
-            *x = self.space.feature_val(*y, feature);
+        for (x, y) in v.iter_mut().zip(self.space.samples(&range).iter()) {
+            //TODO make it pretty
+            x.0 = self.space.feature_val(*y, feature);
         }
         radsort::sort_by_key(&mut v, |k| k.0);
         v
     }
 }
 
-pub struct TrainSpace<'a, W> {
+pub struct TrainSpace<'a, T> {
     dataview: DatasetView<'a>,
     samples: Vec<u32>,
-    targets: Vec<W>,
+    targets: Vec<(T, SampleWeight)>,
 }
 
-impl<'a, W> TrainSpace<'a, W> {
-    pub fn new<T>(ts: TrainView<'a, T>) -> TrainSpace<'a, W>
-    where
-        W: Weighted<T>,
-    {
+impl<'a, T: Copy> TrainSpace<'a, T> {
+    pub fn new(ts: TrainView<'a, T>) -> TrainSpace<'a, T> {
         let amount = ts.weights.iter().filter(|&x| *x > 0).count();
         let mut samples: Vec<u32> = Vec::with_capacity(amount);
-        let mut weighted_targets: Vec<W> = Vec::with_capacity(amount);
+        let mut weighted_targets: Vec<(T, SampleWeight)> = Vec::with_capacity(amount);
 
-        for (i, (t, &w)) in ts.targets.iter().zip(ts.weights.iter()).enumerate() {
+        for (i, (&t, &w)) in ts.targets.iter().zip(ts.weights.iter()).enumerate() {
             if w > 0 {
                 samples.push(i as u32);
-                weighted_targets.push(W::new(t, w));
+                weighted_targets.push((t, w));
             }
         }
 
@@ -198,7 +198,7 @@ impl<'a, W> TrainSpace<'a, W> {
     }
 
     #[inline(always)]
-    pub fn targets(&self, range: &IndexRange) -> &[W] {
+    pub fn targets(&self, range: &IndexRange) -> &[(T, SampleWeight)] {
         &&self.targets[range.clone()]
     }
 

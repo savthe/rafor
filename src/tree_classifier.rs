@@ -89,10 +89,7 @@ impl Classifier {
         let weights = vec![1; labels.len()];
         let tv = TrainView::new(dataset.as_view(), &encoded_labels, &weights);
         Classifier {
-            classifier: ClassifierModel::fit(tv,
-                classes_map.num_classes(),
-                &config.config,
-            ),
+            classifier: ClassifierModel::fit(tv, classes_map.num_classes(), &config.config),
             classes_map,
         }
     }
@@ -118,13 +115,13 @@ impl ClassDecode for Classifier {
 // #[test]
 // fn overfit() {
 //     let dataset = [
-//         0.6, 1.0, 
+//         0.6, 1.0,
 //         0.7, 0.0,
-//         0.8, 1.0, 
-//         0.4, -1.0, 
-//         0.4, -2.0, 
-//         0.4, 1.0, 
-//         0.4, 2.0 
+//         0.8, 1.0,
+//         0.4, -1.0,
+//         0.4, -2.0,
+//         0.4, 1.0,
+//         0.4, 2.0
 //     ];
 //
 //     let targets = [1, 1, 1, 0, 0, 1, 1];
@@ -137,11 +134,11 @@ impl ClassDecode for Classifier {
 // #[test]
 // fn proba() {
 //     let dataset = [
-//         0.1, 0.1, 
-//         0.2, 0.2, 
 //         0.1, 0.1,
-//         0.1, 0.1, 
-//         0.1, 0.1, 
+//         0.2, 0.2,
+//         0.1, 0.1,
+//         0.1, 0.1,
+//         0.1, 0.1,
 //     ];
 //
 //     let targets = [0, 2, 0, 0, 1];

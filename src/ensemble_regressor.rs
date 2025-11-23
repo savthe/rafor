@@ -1,6 +1,6 @@
 use crate::{
     config::*, config_builders::*, decision_tree::RegressorModel, ensemble_predictor,
-    ensemble_trainer, labels::FloatTarget, Dataset, DatasetView, TrainView,
+    ensemble_trainer, Dataset, DatasetView, FloatTarget, TrainView,
 };
 use serde::{Deserialize, Serialize};
 

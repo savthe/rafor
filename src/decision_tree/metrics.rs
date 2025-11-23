@@ -1,4 +1,4 @@
-use crate::labels::{ClassTarget, SampleWeight};
+use crate::{ClassTarget, SampleWeight};
 
 #[derive(Default, Clone, Debug)]
 pub struct Gini {
@@ -45,7 +45,7 @@ impl ImpurityMetric<ClassTarget> for Gini {
 
     #[inline(always)]
     fn pure(&self) -> bool {
-        self.sum_squares == self.num_items * self.num_items 
+        self.sum_squares == self.num_items * self.num_items
     }
 
     #[inline(always)]

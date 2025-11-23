@@ -6,8 +6,7 @@ use super::trainer;
 use super::TrainView;
 use crate::{
     config::{Metric, TrainConfig},
-    labels::*,
-    DatasetView,
+    DatasetView, FloatTarget, SampleWeight,
 };
 use trainer::TrainSpace;
 
@@ -37,7 +36,7 @@ impl RegressorModel {
         let mut tr = RegressorModel {
             tree: DecisionTree::new(tv.dataview.num_features() as u16),
         };
-        let mut space = TrainSpace::<(f32, SampleWeight)>::new(tv);
+        let mut space = TrainSpace::<FloatTarget>::new(tv);
         let (tree, ranges) = match config.metric {
             Metric::MSE => trainer::fit(
                 &mut space,

@@ -1,4 +1,4 @@
-use crate::{config::EnsembleConfig, labels::SampleWeight, DatasetView, TrainView};
+use crate::{config::EnsembleConfig, DatasetView, SampleWeight, TrainView};
 use rand::{rngs::SmallRng, Rng, SeedableRng};
 use std::{
     sync::atomic::{AtomicUsize, Ordering},

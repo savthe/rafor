@@ -27,7 +27,7 @@ pub struct TrainConfig {
     /// amount of features, at each split will be used a random subset of features with size at
     /// least `num_features`.
     ///
-    /// **Note**. If trainer is unable find a splitting value in `num_features` features, it will 
+    /// **Note**. If trainer is unable find a splitting value in `num_features` features, it will
     /// consider additional features.
     pub max_features: NumFeatures,
 
