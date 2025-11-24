@@ -135,7 +135,7 @@ where
             if best_impurity == 0. {
                 break;
             }
-            if idx >= self.max_features && split.pivot > range.start {
+            if idx + 1 >= self.max_features && split.pivot > range.start {
                 break;
             }
         }
