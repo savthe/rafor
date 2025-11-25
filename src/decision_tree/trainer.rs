@@ -9,23 +9,6 @@ use crate::{
 use radsort;
 use rand::{rngs::SmallRng, seq::SliceRandom, SeedableRng};
 
-impl TrainConfig {
-    fn setup_max_features(&self, num_features: usize) -> (usize, Option<SmallRng>) {
-        let max_features = match self.max_features {
-            NumFeatures::SQRT => (num_features as f32).sqrt() as usize,
-            NumFeatures::LOG => (num_features as f32).log2() as usize,
-            NumFeatures::NUMBER(n) => n,
-        };
-
-        let mut rng = None;
-        if max_features < num_features {
-            rng = Some(SmallRng::seed_from_u64(self.seed))
-        }
-
-        (max_features, rng)
-    }
-}
-
 #[derive(Default)]
 struct Split {
     feature: usize,
@@ -38,13 +21,36 @@ where
     Target: Copy,
     S: Splitter<Target>,
 {
-    features_perm: Vec<usize>,
     max_features: usize,
-    rng: Option<SmallRng>,
     conf: TrainConfig,
     space: &'a mut TrainSpace<'b, Target>,
     tree: DecisionTree,
     splitter: S,
+    features_perm: FeaturePermutation,
+}
+
+struct FeaturePermutation {
+    rng: Option<SmallRng>,
+    perm: Vec<usize>,
+}
+
+impl FeaturePermutation {
+    fn new(num_features: usize, rng: Option<SmallRng>) -> Self {
+        Self {
+            rng,
+            perm: (0..num_features).collect(),
+        }
+    }
+
+    fn shake(&mut self) {
+        if let Some(rng) = self.rng.as_mut() {
+            self.perm.shuffle(rng);
+        }
+    }
+
+    fn iter(&self) -> impl Iterator<Item = &usize> + '_ {
+        self.perm.iter()
+    }
 }
 
 pub fn fit<Target>(
@@ -55,12 +61,20 @@ pub fn fit<Target>(
 where
     Target: Copy,
 {
-    let (max_features, rng) = conf.setup_max_features(space.num_features());
+    let num_features = space.num_features();
+
+    let max_features = match conf.max_features {
+        NumFeatures::SQRT => (num_features as f32).sqrt() as usize,
+        NumFeatures::LOG => (num_features as f32).log2() as usize,
+        NumFeatures::NUMBER(n) => n.min(num_features),
+    };
+
+    let rng = (max_features < num_features).then_some(SmallRng::seed_from_u64(conf.seed));
+
     let num_features = space.num_features();
     let mut trainer = Trainer {
         max_features,
-        rng,
-        features_perm: (0..space.num_features()).collect(),
+        features_perm: FeaturePermutation::new(num_features, rng),
         conf,
         space,
         tree: DecisionTree::new(num_features as u16),
@@ -82,20 +96,19 @@ where
 
         let mut ranges: Vec<(NodeHandle, IndexRange)> = Vec::new();
         while let Some((node, range, depth)) = stack.pop() {
-            let mut split = Split::default();
-            if depth < self.conf.max_depth
+            let split = if depth < self.conf.max_depth
                 && range.len() >= self.conf.min_samples_split
                 && range.len() >= 2 * self.conf.min_samples_leaf
             {
-                split = self.find_best_split(&range);
-            }
+                self.find_best_split(&range)
+            } else {
+                None
+            };
 
-            if split.pivot > 0 {
-                self.space.split(&range, split.feature, split.threshold);
-                let (left_range, right_range) = (range.start..split.pivot, split.pivot..range.end);
-                let (left_node, right_node) =
-                    self.tree
-                        .split(&node, split.feature as u16, split.threshold);
+            if let Some(s) = split {
+                self.space.split(&range, s.feature, s.threshold);
+                let (left_range, right_range) = (range.start..s.pivot, s.pivot..range.end);
+                let (left_node, right_node) = self.tree.split(&node, s.feature as u16, s.threshold);
 
                 stack.push((left_node, left_range, depth + 1));
                 stack.push((right_node, right_range, depth + 1));
@@ -106,20 +119,20 @@ where
         ranges
     }
 
-    fn find_best_split(&mut self, range: &IndexRange) -> Split {
+    fn find_best_split(&mut self, range: &IndexRange) -> Option<Split> {
         let mut split = Split::default();
         let targets = self.space.targets(&range);
 
         if !self.splitter.prepare(targets) {
-            return split;
+            return None;
         }
 
         let mut best_impurity = f64::INFINITY;
         let proto: Vec<(f32, Target, SampleWeight)> =
             targets.iter().map(|t| (0., t.0, t.1)).collect();
-        self.prepare_features();
 
-        for (idx, &feature) in self.features_perm.iter().enumerate() {
+        self.features_perm.shake();
+        for (i, &feature) in self.features_perm.iter().enumerate() {
             let ordered_samples = self.prepare_samples(&proto, &range, feature);
             assert!(ordered_samples.len() == range.len());
             let p = self.splitter.find_split(&ordered_samples, best_impurity);
@@ -131,20 +144,11 @@ where
                 best_impurity = p.impurity;
             }
 
-            if best_impurity == 0. {
-                break;
-            }
-            if idx + 1 >= self.max_features && split.pivot > range.start {
+            if best_impurity == 0. || (i + 1 >= self.max_features && split.pivot > range.start) {
                 break;
             }
         }
-        split
-    }
-
-    fn prepare_features(&mut self) {
-        if let Some(rng) = self.rng.as_mut() {
-            self.features_perm.shuffle(rng);
-        }
+        (split.pivot > 0).then_some(split)
     }
 
     fn prepare_samples(
