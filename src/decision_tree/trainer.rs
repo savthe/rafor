@@ -53,14 +53,11 @@ impl FeaturePermutation {
     }
 }
 
-pub fn fit<Target>(
+pub fn fit<Target: Copy>(
     space: &mut TrainSpace<Target>,
     conf: TrainConfig,
     splitter: impl Splitter<Target>,
-) -> (DecisionTree, Vec<(NodeHandle, IndexRange)>)
-where
-    Target: Copy,
-{
+) -> (DecisionTree, Vec<(NodeHandle, IndexRange)>) {
     let num_features = space.num_features();
 
     let max_features = match conf.max_features {
@@ -120,21 +117,28 @@ where
     }
 
     fn find_best_split(&mut self, range: &IndexRange) -> Option<Split> {
-        let mut split = Split::default();
         let targets = self.space.targets(&range);
+        let samples = self.space.samples(&range);
 
+        // Splitter returns false if the range is pure.
         if !self.splitter.prepare(targets) {
             return None;
         }
 
+        let mut split = Split::default();
         let mut best_impurity = f64::INFINITY;
+
         let proto: Vec<(f32, Target, SampleWeight)> =
-            targets.iter().map(|t| (0., t.0, t.1)).collect();
+            targets.iter().map(|&(t, w)| (0., t, w)).collect();
 
         self.features_perm.shake();
         for (i, &feature) in self.features_perm.iter().enumerate() {
-            let ordered_samples = self.prepare_samples(&proto, &range, feature);
-            assert!(ordered_samples.len() == range.len());
+            let mut ordered_samples = proto.clone();
+            for ((x, _, _), y) in ordered_samples.iter_mut().zip(samples.iter()) {
+                *x = self.space.feature_val(*y, feature);
+            }
+
+            radsort::sort_by_key(&mut ordered_samples, |k| k.0);
             let p = self.splitter.find_split(&ordered_samples, best_impurity);
             if p.pivot > 0 {
                 split.pivot = p.pivot + range.start;
@@ -149,20 +153,6 @@ where
             }
         }
         (split.pivot > 0).then_some(split)
-    }
-
-    fn prepare_samples(
-        &self,
-        proto: &Vec<(f32, Target, SampleWeight)>,
-        range: &IndexRange,
-        feature: usize,
-    ) -> Vec<(f32, Target, SampleWeight)> {
-        let mut v = proto.clone();
-        for ((x, _, _), y) in v.iter_mut().zip(self.space.samples(&range).iter()) {
-            *x = self.space.feature_val(*y, feature);
-        }
-        radsort::sort_by_key(&mut v, |k| k.0);
-        v
     }
 }
 
