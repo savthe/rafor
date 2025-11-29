@@ -67,7 +67,7 @@ struct Trainee {
 impl ensemble_trainer::Trainable<ClassTarget> for Trainee {
     fn fit(&mut self, tv: TrainView<ClassTarget>, seed: u64) {
         self.conf.seed = seed;
-        self.tree = ClassifierModel::fit(tv, self.num_classes, &self.conf);
+        self.tree = ClassifierModel::train(tv, self.num_classes, &self.conf);
     }
 }
 

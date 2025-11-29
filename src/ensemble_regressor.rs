@@ -74,7 +74,7 @@ impl Trainee {
 impl ensemble_trainer::Trainable<FloatTarget> for Trainee {
     fn fit(&mut self, tv: TrainView<FloatTarget>, seed: u64) {
         self.train_config.seed = seed;
-        self.tree = RegressorModel::fit(tv, &self.train_config);
+        self.tree = RegressorModel::train(tv, &self.train_config);
     }
 }
 

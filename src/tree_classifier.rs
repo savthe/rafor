@@ -89,7 +89,7 @@ impl Classifier {
         let weights = vec![1; labels.len()];
         let tv = TrainView::new(dataset.as_view(), &encoded_labels, &weights);
         Classifier {
-            classifier: ClassifierModel::fit(tv, classes_map.num_classes(), &config.config),
+            classifier: ClassifierModel::train(tv, classes_map.num_classes(), &config.config),
             classes_map,
         }
     }

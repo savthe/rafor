@@ -16,22 +16,30 @@ struct Split {
     threshold: f32,
 }
 
-struct Trainer<'a, 'b, Target, S>
-where
-    Target: Copy,
-    S: Splitter<Target>,
-{
-    max_features: usize,
-    conf: TrainConfig,
-    space: &'a mut TrainSpace<'b, Target>,
-    tree: DecisionTree,
-    splitter: S,
-    features_perm: FeaturePermutation,
-}
-
 struct FeaturePermutation {
     rng: Option<SmallRng>,
     perm: Vec<usize>,
+}
+
+pub struct TrainSpace<'a, T> {
+    dataview: DatasetView<'a>,
+    samples: Vec<u32>,
+    targets: Vec<(T, SampleWeight)>,
+}
+
+struct Trainer<'a, Target, S, Aggr>
+where
+    Target: Copy,
+    S: Splitter<Target>,
+    Aggr: Aggregator<Target>,
+{
+    max_features: usize,
+    conf: TrainConfig,
+    space: TrainSpace<'a, Target>,
+    tree: DecisionTree,
+    splitter: S,
+    features_perm: FeaturePermutation,
+    aggregator: &'a mut Aggr,
 }
 
 impl FeaturePermutation {
@@ -53,11 +61,17 @@ impl FeaturePermutation {
     }
 }
 
-pub fn fit<Target: Copy>(
-    space: &mut TrainSpace<Target>,
+pub trait Aggregator<T> {
+    fn aggregate(&mut self, leaf_items: &[(T, SampleWeight)]) -> u32;
+}
+
+pub fn train<Target: Copy>(
+    tv: TrainView<Target>,
     conf: TrainConfig,
     splitter: impl Splitter<Target>,
-) -> (DecisionTree, Vec<(NodeHandle, IndexRange)>) {
+    aggregator: &mut impl Aggregator<Target>,
+) -> DecisionTree {
+    let space = TrainSpace::new(tv);
     let num_features = space.num_features();
 
     let max_features = match conf.max_features {
@@ -76,22 +90,23 @@ pub fn fit<Target: Copy>(
         space,
         tree: DecisionTree::new(num_features as u16),
         splitter,
+        aggregator,
     };
 
-    let ranges = trainer.fit();
-    (trainer.tree, ranges)
+    trainer.fit();
+    trainer.tree
 }
 
-impl<'a, 'b, Target, S> Trainer<'a, 'b, Target, S>
+impl<'a, Target, S, Aggr> Trainer<'a, Target, S, Aggr>
 where
     Target: Copy,
     S: Splitter<Target>,
+    Aggr: Aggregator<Target>,
 {
-    pub fn fit(&mut self) -> Vec<(NodeHandle, IndexRange)> {
+    pub fn fit(&mut self) {
         let mut stack: Vec<(NodeHandle, IndexRange, usize)> =
             vec![(self.tree.root(), 0..self.space.size(), 0); 1];
 
-        let mut ranges: Vec<(NodeHandle, IndexRange)> = Vec::new();
         while let Some((node, range, depth)) = stack.pop() {
             let split = if depth < self.conf.max_depth
                 && range.len() >= self.conf.min_samples_split
@@ -110,10 +125,10 @@ where
                 stack.push((left_node, left_range, depth + 1));
                 stack.push((right_node, right_range, depth + 1));
             } else {
-                ranges.push((node, range));
+                let value = self.aggregator.aggregate(self.space.targets(&range));
+                self.tree.set_leaf_value(&node, value);
             }
         }
-        ranges
     }
 
     fn find_best_split(&mut self, range: &IndexRange) -> Option<Split> {
@@ -154,12 +169,6 @@ where
         }
         (split.pivot > 0).then_some(split)
     }
-}
-
-pub struct TrainSpace<'a, T> {
-    dataview: DatasetView<'a>,
-    samples: Vec<u32>,
-    targets: Vec<(T, SampleWeight)>,
 }
 
 impl<'a, T: Copy> TrainSpace<'a, T> {

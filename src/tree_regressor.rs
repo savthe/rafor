@@ -79,7 +79,7 @@ impl Regressor {
         let tv = TrainView::new(dataset.as_view(), &targets, &weights);
 
         Regressor {
-            regressor: RegressorModel::fit(tv, &config.config),
+            regressor: RegressorModel::train(tv, &config.config),
         }
     }
 
