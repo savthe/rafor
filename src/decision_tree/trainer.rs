@@ -42,6 +42,10 @@ where
     aggregator: &'a mut Aggr,
 }
 
+pub trait Aggregator<T> {
+    fn aggregate(&mut self, leaf_items: &[(T, SampleWeight)]) -> u32;
+}
+
 impl FeaturePermutation {
     fn new(num_features: usize, rng: Option<SmallRng>) -> Self {
         Self {
@@ -59,10 +63,6 @@ impl FeaturePermutation {
     fn iter(&self) -> impl Iterator<Item = &usize> + '_ {
         self.perm.iter()
     }
-}
-
-pub trait Aggregator<T> {
-    fn aggregate(&mut self, leaf_items: &[(T, SampleWeight)]) -> u32;
 }
 
 pub fn train<Target: Copy>(
