@@ -1,4 +1,4 @@
-use crate::{config::EnsembleConfig, labels::SampleWeight, DatasetView, TrainView};
+use crate::{config::EnsembleConfig, DatasetView, SampleWeight, TrainView};
 use rand::{rngs::SmallRng, Rng, SeedableRng};
 use std::{
     sync::atomic::{AtomicUsize, Ordering},
@@ -60,10 +60,10 @@ where
 }
 
 fn bootstrap(num_samples: usize, rng: &mut SmallRng) -> Vec<SampleWeight> {
-    let mut weights: Vec<SampleWeight> = vec![0; num_samples];
+    let mut weights: Vec<SampleWeight> = vec![0.; num_samples];
     for _ in 0..num_samples {
         let i = rng.random_range(0..num_samples);
-        weights[i] += 1
+        weights[i] += 1.
     }
     weights
 }

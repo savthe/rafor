@@ -1,30 +1,13 @@
 use super::decision_tree::{DecisionTree, NodeHandle};
 use super::splitter::Splitter;
 use super::TrainView;
+use crate::SampleWeight;
 use crate::{
     config::{NumFeatures, TrainConfig},
-    labels::*,
     DatasetView, IndexRange,
 };
 use radsort;
 use rand::{rngs::SmallRng, seq::SliceRandom, SeedableRng};
-
-impl TrainConfig {
-    fn setup_max_features(&self, num_features: usize) -> (usize, Option<SmallRng>) {
-        let max_features = match self.max_features {
-            NumFeatures::SQRT => (num_features as f32).sqrt() as usize,
-            NumFeatures::LOG => (num_features as f32).log2() as usize,
-            NumFeatures::NUMBER(n) => n,
-        };
-
-        let mut rng = None;
-        if max_features < num_features {
-            rng = Some(SmallRng::seed_from_u64(self.seed))
-        }
-
-        (max_features, rng)
-    }
-}
 
 #[derive(Default)]
 struct Split {
@@ -33,96 +16,144 @@ struct Split {
     threshold: f32,
 }
 
-// Trainer gets mutable refs to the tree it should train, and the training space. Target is at this
-// point is generic, but actually for random forest, it is a weighted target. A splitter knows how
-// to handle it, trainer just rearranges targets and passes them to splitter.
-struct Trainer<'a, 'b, Target, S>
+struct FeaturePermutation {
+    rng: Option<SmallRng>,
+    perm: Vec<usize>,
+}
+
+pub struct TrainSpace<'a, T> {
+    dataview: DatasetView<'a>,
+    samples: Vec<u32>,
+    targets: Vec<(T, SampleWeight)>,
+}
+
+struct Trainer<'a, Target, S, Aggr>
 where
     Target: Copy,
     S: Splitter<Target>,
+    Aggr: Aggregator<Target>,
 {
-    features_perm: Vec<usize>,
     max_features: usize,
-    rng: Option<SmallRng>,
     conf: TrainConfig,
-    space: &'a mut TrainSpace<'b, Target>,
+    space: TrainSpace<'a, Target>,
     tree: DecisionTree,
     splitter: S,
+    features_perm: FeaturePermutation,
+    aggregator: &'a mut Aggr,
 }
 
-pub fn fit<Target>(
-    space: &mut TrainSpace<Target>,
+pub trait Aggregator<T> {
+    fn aggregate(&mut self, leaf_items: &[(T, SampleWeight)]) -> u32;
+}
+
+impl FeaturePermutation {
+    fn new(num_features: usize, rng: Option<SmallRng>) -> Self {
+        Self {
+            rng,
+            perm: (0..num_features).collect(),
+        }
+    }
+
+    fn shake(&mut self) {
+        if let Some(rng) = self.rng.as_mut() {
+            self.perm.shuffle(rng);
+        }
+    }
+
+    fn iter(&self) -> impl Iterator<Item = &usize> + '_ {
+        self.perm.iter()
+    }
+}
+
+pub fn train<Target: Copy>(
+    tv: TrainView<Target>,
     conf: TrainConfig,
     splitter: impl Splitter<Target>,
-) -> (DecisionTree, Vec<(NodeHandle, IndexRange)>)
-where
-    Target: Copy,
-{
-    let (max_features, rng) = conf.setup_max_features(space.num_features());
+    aggregator: &mut impl Aggregator<Target>,
+) -> DecisionTree {
+    let space = TrainSpace::new(tv);
+    let num_features = space.num_features();
+
+    let max_features = match conf.max_features {
+        NumFeatures::SQRT => (num_features as f32).sqrt() as usize,
+        NumFeatures::LOG => (num_features as f32).log2() as usize,
+        NumFeatures::NUMBER(n) => n.min(num_features),
+    };
+
+    let rng = (max_features < num_features).then_some(SmallRng::seed_from_u64(conf.seed));
+
     let num_features = space.num_features();
     let mut trainer = Trainer {
         max_features,
-        rng,
-        features_perm: (0..space.num_features()).collect(),
+        features_perm: FeaturePermutation::new(num_features, rng),
         conf,
         space,
         tree: DecisionTree::new(num_features as u16),
         splitter,
+        aggregator,
     };
 
-    let ranges = trainer.fit();
-    (trainer.tree, ranges)
+    trainer.fit();
+    trainer.tree
 }
 
-impl<'a, 'b, Target, S> Trainer<'a, 'b, Target, S>
+impl<'a, Target, S, Aggr> Trainer<'a, Target, S, Aggr>
 where
     Target: Copy,
     S: Splitter<Target>,
+    Aggr: Aggregator<Target>,
 {
-    pub fn fit(&mut self) -> Vec<(NodeHandle, IndexRange)> {
+    pub fn fit(&mut self) {
         let mut stack: Vec<(NodeHandle, IndexRange, usize)> =
             vec![(self.tree.root(), 0..self.space.size(), 0); 1];
 
-        let mut ranges: Vec<(NodeHandle, IndexRange)> = Vec::new();
         while let Some((node, range, depth)) = stack.pop() {
-            let mut split = Split::default();
-            if depth < self.conf.max_depth
+            let split = if depth < self.conf.max_depth
                 && range.len() >= self.conf.min_samples_split
                 && range.len() >= 2 * self.conf.min_samples_leaf
             {
-                split = self.find_best_split(&range);
-            }
+                self.find_best_split(&range)
+            } else {
+                None
+            };
 
-            if split.pivot > 0 {
-                self.space.split(&range, split.feature, split.threshold);
-                let (left_range, right_range) = (range.start..split.pivot, split.pivot..range.end);
-                let (left_node, right_node) =
-                    self.tree.split(&node, split.feature as u16, split.threshold);
+            if let Some(s) = split {
+                self.space.split(&range, s.feature, s.threshold);
+                let (left_range, right_range) = (range.start..s.pivot, s.pivot..range.end);
+                let (left_node, right_node) = self.tree.split(&node, s.feature as u16, s.threshold);
 
                 stack.push((left_node, left_range, depth + 1));
                 stack.push((right_node, right_range, depth + 1));
             } else {
-                ranges.push((node, range));
+                let value = self.aggregator.aggregate(self.space.targets(&range));
+                self.tree.set_leaf_value(&node, value);
             }
         }
-        ranges
     }
 
-    fn find_best_split(&mut self, range: &IndexRange) -> Split {
-        let mut split = Split::default();
+    fn find_best_split(&mut self, range: &IndexRange) -> Option<Split> {
         let targets = self.space.targets(&range);
+        let samples = self.space.samples(&range);
 
+        // Splitter returns false if the range is pure.
         if !self.splitter.prepare(targets) {
-            return split;
+            return None;
         }
 
+        let mut split = Split::default();
         let mut best_impurity = f64::INFINITY;
-        let proto: Vec<(f32, Target)> = targets.iter().map(|t| (0., *t)).collect();
-        self.prepare_features();
 
-        for (idx, &feature) in self.features_perm.iter().enumerate() {
-            let ordered_samples = self.prepare_samples(&proto, &range, feature);
-            assert!(ordered_samples.len() == range.len());
+        let proto: Vec<(f32, Target, SampleWeight)> =
+            targets.iter().map(|&(t, w)| (0., t, w)).collect();
+
+        self.features_perm.shake();
+        for (i, &feature) in self.features_perm.iter().enumerate() {
+            let mut ordered_samples = proto.clone();
+            for ((x, _, _), y) in ordered_samples.iter_mut().zip(samples.iter()) {
+                *x = self.space.feature_val(*y, feature);
+            }
+
+            radsort::sort_by_key(&mut ordered_samples, |k| k.0);
             let p = self.splitter.find_split(&ordered_samples, best_impurity);
             if p.pivot > 0 {
                 split.pivot = p.pivot + range.start;
@@ -132,56 +163,24 @@ where
                 best_impurity = p.impurity;
             }
 
-            if best_impurity == 0. {
-                break;
-            }
-            if idx + 1 >= self.max_features && split.pivot > range.start {
+            if best_impurity == 0. || (i + 1 >= self.max_features && split.pivot > range.start) {
                 break;
             }
         }
-        split
-    }
-
-    fn prepare_features(&mut self) {
-        if let Some(rng) = self.rng.as_mut() {
-            self.features_perm.shuffle(rng);
-        }
-    }
-
-    fn prepare_samples(
-        &self,
-        proto: &Vec<(f32, Target)>,
-        range: &IndexRange,
-        feature: usize,
-    ) -> Vec<(f32, Target)> {
-        let mut v = proto.clone();
-        for ((x, _), y) in v.iter_mut().zip(self.space.samples(&range).iter()) {
-            *x = self.space.feature_val(*y, feature);
-        }
-        radsort::sort_by_key(&mut v, |k| k.0);
-        v
+        (split.pivot > 0).then_some(split)
     }
 }
 
-pub struct TrainSpace<'a, W> {
-    dataview: DatasetView<'a>,
-    samples: Vec<u32>,
-    targets: Vec<W>,
-}
-
-impl<'a, W> TrainSpace<'a, W> {
-    pub fn new<T>(ts: TrainView<'a, T>) -> TrainSpace<'a, W>
-    where
-        W: Weighted<T>,
-    {
-        let amount = ts.weights.iter().filter(|&x| *x > 0).count();
+impl<'a, T: Copy> TrainSpace<'a, T> {
+    pub fn new(ts: TrainView<'a, T>) -> TrainSpace<'a, T> {
+        let amount = ts.weights.iter().filter(|&x| *x > 0.).count();
         let mut samples: Vec<u32> = Vec::with_capacity(amount);
-        let mut weighted_targets: Vec<W> = Vec::with_capacity(amount);
+        let mut weighted_targets: Vec<(T, SampleWeight)> = Vec::with_capacity(amount);
 
-        for (i, (t, &w)) in ts.targets.iter().zip(ts.weights.iter()).enumerate() {
-            if w > 0 {
+        for (i, (&t, &w)) in ts.targets.iter().zip(ts.weights.iter()).enumerate() {
+            if w > 0. {
                 samples.push(i as u32);
-                weighted_targets.push(W::new(t, w));
+                weighted_targets.push((t, w));
             }
         }
 
@@ -198,7 +197,7 @@ impl<'a, W> TrainSpace<'a, W> {
     }
 
     #[inline(always)]
-    pub fn targets(&self, range: &IndexRange) -> &[W] {
+    pub fn targets(&self, range: &IndexRange) -> &[(T, SampleWeight)] {
         &&self.targets[range.clone()]
     }
 

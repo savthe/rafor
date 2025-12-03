@@ -1,6 +1,6 @@
 use crate::{
     config::*, config_builders::*, decision_tree::RegressorModel, ensemble_predictor,
-    ensemble_trainer, labels::FloatTarget, Dataset, DatasetView, TrainView,
+    ensemble_trainer, Dataset, DatasetView, FloatTarget, TrainView,
 };
 use serde::{Deserialize, Serialize};
 
@@ -74,7 +74,7 @@ impl Trainee {
 impl ensemble_trainer::Trainable<FloatTarget> for Trainee {
     fn fit(&mut self, tv: TrainView<FloatTarget>, seed: u64) {
         self.train_config.seed = seed;
-        self.tree = RegressorModel::fit(tv, &self.train_config);
+        self.tree = RegressorModel::train(tv, &self.train_config);
     }
 }
 

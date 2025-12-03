@@ -4,10 +4,8 @@ use super::DecisionTree;
 use super::TrainView;
 use crate::{
     config::{Metric, TrainConfig},
-    labels::*,
-    DatasetView,
+    ClassTarget, DatasetView, SampleWeight,
 };
-use trainer::TrainSpace;
 
 use serde::{Deserialize, Serialize};
 
@@ -16,6 +14,12 @@ pub struct ClassifierModel {
     proba: Vec<f32>,
     num_classes: usize,
     tree: DecisionTree,
+}
+
+#[derive(Default)]
+struct ProbabilityAggregator {
+    proba: Vec<f32>,
+    num_classes: usize,
 }
 
 impl ClassifierModel {
@@ -42,62 +46,49 @@ impl ClassifierModel {
         &self.proba[i..i + self.num_classes]
     }
 
-    pub fn fit(tv: TrainView<ClassTarget>, num_cls: usize, cfg: &TrainConfig) -> ClassifierModel {
-        let max_weight = *tv.weights.iter().max().unwrap();
-
-        if num_cls < (1 << 8) && max_weight < (1 << 24) {
-            Self::fit_internal::<DenseClass<8>>(tv, num_cls, cfg)
-        } else if num_cls < (1 << 16) && max_weight < (1 << 16) {
-            Self::fit_internal::<DenseClass<16>>(tv, num_cls, cfg)
-        } else if num_cls < (1 << 24) && max_weight < (1 << 8) {
-            Self::fit_internal::<DenseClass<24>>(tv, num_cls, cfg)
-        } else {
-            Self::fit_internal::<(ClassTarget, SampleWeight)>(tv, num_cls, cfg)
-        }
-    }
-
-    pub fn fit_internal<P: Weighted<ClassTarget>>(
-        tv: TrainView<ClassTarget>,
-        num_cls: usize,
-        cfg: &TrainConfig,
-    ) -> ClassifierModel {
-        let mut tr = ClassifierModel {
-            proba: Vec::new(),
-            num_classes: num_cls,
-            tree: DecisionTree::new(tv.dataview.num_features() as u16),
-        };
-
-        let mut space: TrainSpace<P> = TrainSpace::new(tv);
-
-        let (tree, ranges) = match cfg.metric {
-            Metric::GINI => trainer::fit(
-                &mut space,
+    pub fn train(tv: TrainView<ClassTarget>, num_cls: usize, cfg: &TrainConfig) -> ClassifierModel {
+        let mut probability_aggr = ProbabilityAggregator::new(num_cls);
+        let tree = match cfg.metric {
+            Metric::GINI => trainer::train(
+                tv,
                 cfg.clone(),
                 GiniSplitter::new(num_cls, cfg.min_samples_leaf),
+                &mut probability_aggr,
             ),
             _ => panic!("Metric is not supported for classifier tree"),
         };
 
-        tr.tree = tree;
-        tr.proba.resize(tr.num_classes * ranges.len(), 0.);
-        let mut offset = 0;
-        for ((node, range), bins) in ranges.iter().zip(tr.proba.chunks_mut(tr.num_classes)) {
-            let targets = &space.targets(&range);
-
-            let mut count = 0;
-            for t in targets.iter() {
-                let (x, w) = t.unweight();
-                bins[x as usize] += w as f32;
-                count += w;
-            }
-
-            for x in bins.iter_mut() {
-                *x /= count as f32;
-            }
-
-            tr.tree.set_leaf_value(&node, offset);
-            offset += 1;
+        ClassifierModel {
+            proba: probability_aggr.proba,
+            num_classes: num_cls,
+            tree,
         }
-        tr
+    }
+}
+
+impl ProbabilityAggregator {
+    fn new(num_classes: usize) -> Self {
+        Self {
+            proba: Vec::new(),
+            num_classes,
+        }
+    }
+}
+
+impl trainer::Aggregator<ClassTarget> for ProbabilityAggregator {
+    fn aggregate(&mut self, leaf_items: &[(ClassTarget, SampleWeight)]) -> u32 {
+        let mut bins = vec![0. as f64; self.num_classes];
+        let mut total_weight: f64 = 0.;
+        for &(x, w) in leaf_items.iter() {
+            bins[x as usize] += w as f64;
+            total_weight += w as f64;
+        }
+
+        let offset = self.proba.len() / self.num_classes;
+        for x in bins.iter_mut() {
+            self.proba.push((*x / total_weight) as f32);
+        }
+
+        offset as u32
     }
 }

@@ -1,4 +1,4 @@
-use crate::labels::ClassTarget;
+use crate::ClassTarget;
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeSet, HashMap};
 
