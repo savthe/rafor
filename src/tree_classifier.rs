@@ -86,7 +86,7 @@ impl Classifier {
     pub fn fit(raw_dataset: &[f32], labels: &[i64], config: &ClassifierConfig) -> Self {
         let dataset = Dataset::with_transposed(raw_dataset, labels.len());
         let (classes_map, encoded_labels) = ClassesMapping::with_encode(labels);
-        let weights = vec![1; labels.len()];
+        let weights = vec![1.; labels.len()];
         let tv = TrainView::new(dataset.as_view(), &encoded_labels, &weights);
         Classifier {
             classifier: ClassifierModel::train(tv, classes_map.num_classes(), &config.config),

@@ -87,7 +87,7 @@ use decision_tree::TrainView;
 
 type ClassTarget = u32;
 type FloatTarget = f32;
-type SampleWeight = u32;
+type SampleWeight = f32;
 
 type IndexRange = std::ops::Range<usize>;
 

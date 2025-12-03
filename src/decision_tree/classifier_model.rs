@@ -77,19 +77,18 @@ impl ProbabilityAggregator {
 
 impl trainer::Aggregator<ClassTarget> for ProbabilityAggregator {
     fn aggregate(&mut self, leaf_items: &[(ClassTarget, SampleWeight)]) -> u32 {
-        let mut bins = vec![0.; self.num_classes];
-        let mut count = 0;
+        let mut bins = vec![0. as f64; self.num_classes];
+        let mut total_weight: f64 = 0.;
         for &(x, w) in leaf_items.iter() {
-            bins[x as usize] += w as f32;
-            count += w;
-        }
-
-        for x in bins.iter_mut() {
-            *x /= count as f32;
+            bins[x as usize] += w as f64;
+            total_weight += w as f64;
         }
 
         let offset = self.proba.len() / self.num_classes;
-        self.proba.extend_from_slice(&bins);
+        for x in bins.iter_mut() {
+            self.proba.push((*x / total_weight) as f32);
+        }
+
         offset as u32
     }
 }

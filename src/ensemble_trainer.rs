@@ -60,10 +60,10 @@ where
 }
 
 fn bootstrap(num_samples: usize, rng: &mut SmallRng) -> Vec<SampleWeight> {
-    let mut weights: Vec<SampleWeight> = vec![0; num_samples];
+    let mut weights: Vec<SampleWeight> = vec![0.; num_samples];
     for _ in 0..num_samples {
         let i = rng.random_range(0..num_samples);
-        weights[i] += 1
+        weights[i] += 1.
     }
     weights
 }

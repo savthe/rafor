@@ -53,13 +53,13 @@ impl RegressorModel {
 impl trainer::Aggregator<FloatTarget> for Aggregator {
     fn aggregate(&mut self, leaf_items: &[(FloatTarget, SampleWeight)]) -> u32 {
         // TODO idiomatic
-        let mut s: f32 = 0.;
-        let mut n = 0;
+        let mut s: f64 = 0.;
+        let mut total_weight: f64 = 0.;
         for &(x, w) in leaf_items.iter() {
-            s += x * w as f32;
-            n += w;
+            s += (x * w) as f64;
+            total_weight += w as f64;
         }
-        let value = s / n as f32;
+        let value = (s / total_weight) as f32;
         value.to_bits()
     }
 }

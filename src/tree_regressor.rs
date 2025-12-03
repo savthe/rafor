@@ -75,7 +75,7 @@ impl Regressor {
     /// Trains a regression tree with dataset given by a slice of length divisible by targets.len().
     pub fn fit(raw_dataset: &[f32], targets: &[FloatTarget], config: &RegressorConfig) -> Self {
         let dataset = Dataset::with_transposed(raw_dataset, targets.len());
-        let weights = vec![1; targets.len()];
+        let weights = vec![1.; targets.len()];
         let tv = TrainView::new(dataset.as_view(), &targets, &weights);
 
         Regressor {

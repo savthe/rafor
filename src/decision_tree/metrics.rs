@@ -47,7 +47,6 @@ impl ImpurityMetric<ClassTarget> for Gini {
     fn pure(&self) -> bool {
         let empty_bins = self.bins.iter().filter(|&x| *x == 0.).count();
         self.bins.len() <= empty_bins + 1
-        //self.sum_squares == self.num_items * self.num_items
     }
 
     #[inline(always)]
@@ -73,12 +72,9 @@ impl ImpurityMetric<f32> for Mse {
     fn push(&mut self, y: f32, weight: SampleWeight) {
         let weight = weight as f64;
         let y = y as f64;
-        // self.sum += y * weight as f64;
-        // self.sum_squares += y * y * weight as f64;
 
         let next_mean =
             self.mean + weight as f64 * (y - self.mean) / (self.total_weight + weight) as f64;
-        //let next_mean = self.mean + weight as f64 / (self.num_items + weight) as f64 *(y - self.mean);
         self.sum_squares += weight as f64 * (y - self.mean) * (y - next_mean);
         self.mean = next_mean;
         self.total_weight += weight;

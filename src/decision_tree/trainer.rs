@@ -173,12 +173,12 @@ where
 
 impl<'a, T: Copy> TrainSpace<'a, T> {
     pub fn new(ts: TrainView<'a, T>) -> TrainSpace<'a, T> {
-        let amount = ts.weights.iter().filter(|&x| *x > 0).count();
+        let amount = ts.weights.iter().filter(|&x| *x > 0.).count();
         let mut samples: Vec<u32> = Vec::with_capacity(amount);
         let mut weighted_targets: Vec<(T, SampleWeight)> = Vec::with_capacity(amount);
 
         for (i, (&t, &w)) in ts.targets.iter().zip(ts.weights.iter()).enumerate() {
-            if w > 0 {
+            if w > 0. {
                 samples.push(i as u32);
                 weighted_targets.push((t, w));
             }
