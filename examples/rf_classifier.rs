@@ -4,6 +4,7 @@ use rafor::rf::Classifier; // Requires num_cpus dependency in Cargo.toml
 
 fn main() {
     // We have 5 samples with 3 classes.
+    #[rustfmt::skip]
     let dataset = [
         0.7, 0.0, 
         0.8, 1.0, 
@@ -12,13 +13,13 @@ fn main() {
         0.4, 2.1
     ];
     let targets = [1, 5, 1, -15, 5];
-    let options = Classifier::default_config()
+
+    let predictor = Classifier::trainer()
         .with_max_depth(15)
         .with_trees(40)
         .with_threads(num_cpus::get())
         .with_seed(42)
-        .clone();
-    let predictor = Classifier::fit(&dataset, &targets, &options);
+        .train(&dataset, &targets);
 
     // Get predictions for same dataset.
     let predictions = predictor.predict(&dataset, num_cpus::get());

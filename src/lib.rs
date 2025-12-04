@@ -49,13 +49,13 @@
 //!         0.4, 2.1
 //!     ];
 //!     let targets = [1, 5, 1, -15, 5];
-//!     let conf = Classifier::default_config()
+//!
+//!     let predictor = Classifier::trainer()
 //!         .with_max_depth(15)
 //!         .with_trees(40)
 //!         .with_threads(num_cpus::get())
 //!         .with_seed(42)
-//!         .clone();
-//!     let predictor = Classifier::fit(&dataset, &targets, &conf);
+//!         .train(&dataset, &targets);
 //!
 //!     // Get predictions for same dataset.
 //!     let predictions = predictor.predict(&dataset, num_cpus::get());
@@ -100,14 +100,14 @@ pub mod prelude {
 
 pub mod dt {
     //! Decision Tree implementation.
-    pub use super::tree_classifier::{Classifier, ClassifierConfig};
-    pub use super::tree_regressor::{Regressor, RegressorConfig};
+    pub use super::tree_classifier::Classifier;
+    pub use super::tree_regressor::Regressor;
 }
 
 pub mod rf {
     //! Random Forest implementation.
-    pub use crate::ensemble_classifier::{Classifier, ClassifierConfig};
-    pub use crate::ensemble_regressor::{Regressor, RegressorConfig};
+    pub use crate::ensemble_classifier::Classifier;
+    pub use crate::ensemble_regressor::Regressor;
 }
 
 fn classify(proba: &[f32], mapping: &ClassesMapping) -> Vec<i64> {

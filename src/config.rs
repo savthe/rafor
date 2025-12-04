@@ -1,6 +1,8 @@
 //! Configurations for training.
 use serde::{Deserialize, Serialize};
 
+//TODO move config to decision tree trainer.
+
 /// Defines a split impurit metric. Currently only 2 metrics supported: Gini index for
 /// classification trees and MSE for regression trees.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]

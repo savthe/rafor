@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 /// use rafor::dt;
 /// let dataset = [0.7, 0.0, 0.8, 1.0, 0.7, 0.0];
 /// let targets = [1, 5, 1];
-/// let predictor = dt::Classifier::fit(&dataset, &targets, &dt::Classifier::default_config());
+/// let predictor = dt::Classifier::trainer().train(&dataset, &targets);
 /// let predictions = predictor.predict(&dataset);
 /// assert_eq!(&predictions, &[1, 5, 1]);
 /// ```
@@ -24,7 +24,7 @@ pub struct Classifier {
     classes_map: ClassesMapping,
 }
 
-/// A training configuration for tree classifier.
+/// A trainer for tree classifier.
 /// # Default values:
 /// ```ignore
 /// max_depth: usize::MAX,
@@ -35,11 +35,11 @@ pub struct Classifier {
 /// min_samples_split: 2
 /// ```
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
-pub struct ClassifierConfig {
-    pub config: TrainConfig,
+pub struct Trainer {
+    config: TrainConfig
 }
 
-impl Default for ClassifierConfig {
+impl Default for Trainer {
     fn default() -> Self {
         Self {
             config: TrainConfig {
@@ -54,14 +54,28 @@ impl Default for ClassifierConfig {
     }
 }
 
-impl TrainConfigProvider for ClassifierConfig {
+impl TrainConfigProvider for Trainer {
     fn train_config(&mut self) -> &mut TrainConfig {
         &mut self.config
     }
 }
 
-impl CommonConfigBuilder for ClassifierConfig {}
-impl ClassifierConfigBuilder for ClassifierConfig {}
+impl CommonConfigBuilder for Trainer {}
+impl ClassifierConfigBuilder for Trainer {}
+
+impl Trainer {
+    /// Trains a classifier tree with dataset given by a slice of length divisible by targets.len().
+    pub fn train(&self, raw_dataset: &[f32], labels: &[i64]) -> Classifier {
+        let dataset = Dataset::with_transposed(raw_dataset, labels.len());
+        let (classes_map, encoded_labels) = ClassesMapping::with_encode(labels);
+        let weights = vec![1.; labels.len()];
+        let tv = TrainView::new(dataset.as_view(), &encoded_labels, &weights);
+        Classifier {
+            classifier: ClassifierModel::train(tv, classes_map.num_classes(), &self.config),
+            classes_map,
+        }
+    }
+}
 
 impl Classifier {
     /// Predicts classes for a set of samples.
@@ -82,26 +96,14 @@ impl Classifier {
         self.classifier.predict(&view)
     }
 
-    /// Trains a classifier tree with dataset given by a slice of length divisible by targets.len().
-    pub fn fit(raw_dataset: &[f32], labels: &[i64], config: &ClassifierConfig) -> Self {
-        let dataset = Dataset::with_transposed(raw_dataset, labels.len());
-        let (classes_map, encoded_labels) = ClassesMapping::with_encode(labels);
-        let weights = vec![1.; labels.len()];
-        let tv = TrainView::new(dataset.as_view(), &encoded_labels, &weights);
-        Classifier {
-            classifier: ClassifierModel::train(tv, classes_map.num_classes(), &config.config),
-            classes_map,
-        }
+    /// Provides trainer for training a classifier tree.
+    pub fn trainer() -> Trainer {
+        Trainer::default()
     }
 
     /// Returns a number of features for a trained tree.
     pub fn num_features(&self) -> usize {
         self.classifier.num_features()
-    }
-
-    /// Returns training config filled with default values.
-    pub fn default_config() -> ClassifierConfig {
-        ClassifierConfig::default()
     }
 }
 
@@ -111,39 +113,3 @@ impl ClassDecode for Classifier {
     }
 }
 
-// #[rustfmt::skip]
-// #[test]
-// fn overfit() {
-//     let dataset = [
-//         0.6, 1.0,
-//         0.7, 0.0,
-//         0.8, 1.0,
-//         0.4, -1.0,
-//         0.4, -2.0,
-//         0.4, 1.0,
-//         0.4, 2.0
-//     ];
-//
-//     let targets = [1, 1, 1, 0, 0, 1, 1];
-//     let predictor = Classifier::fit(&dataset, &targets, &Classifier::default_config());
-//     let predictions = predictor.predict(&dataset);
-//     assert_eq!(&predictions, &[1, 1, 1, 0, 0, 1, 1]);
-// }
-//
-// #[rustfmt::skip]
-// #[test]
-// fn proba() {
-//     let dataset = [
-//         0.1, 0.1,
-//         0.2, 0.2,
-//         0.1, 0.1,
-//         0.1, 0.1,
-//         0.1, 0.1,
-//     ];
-//
-//     let targets = [0, 2, 0, 0, 1];
-//     let predictor = Classifier::fit(&dataset, &targets, &Classifier::default_config());
-//
-//     assert_eq!(predictor.proba(&[0.1, 0.1]), &[0.75, 0.25, 0.0]);
-//     assert_eq!(predictor.proba(&[0.2, 0.2]), &[0.0, 0.0, 1.0]);
-// }

@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 /// use rafor::rf;
 /// let dataset = [0.7, 0.0, 0.8, 1.0, 0.7, 0.0];
 /// let targets = [1.0, 0.5, 0.2];
-/// let predictor = rf::Regressor::fit(&dataset, &targets, &rf::Regressor::default_config());
+/// let predictor = rf::Regressor::trainer().train(&dataset, &targets);
 /// let predictions = predictor.predict(&dataset, 1);
 /// println!("{:?}", predictions);
 /// ```
@@ -32,12 +32,12 @@ pub struct Regressor {
 /// num_threads: 1,
 /// ```
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct RegressorConfig {
+pub struct Trainer {
     pub train_config: TrainConfig,
     pub ensemble_config: EnsembleConfig,
 }
 
-impl Default for RegressorConfig {
+impl Default for Trainer {
     fn default() -> Self {
         Self {
             train_config: TrainConfig {
@@ -84,6 +84,25 @@ impl ensemble_predictor::Predictor for RegressorModel {
     }
 }
 
+impl Trainer {
+    /// Trains a random forest regressor with dataset given by a slice of length divisible by
+    /// targets.len().
+    pub fn train(&self, data: &[f32], targets: &[FloatTarget]) -> Regressor {
+        let ds = Dataset::with_transposed(data, targets.len());
+        let trainee = Trainee::new(self.train_config.clone());
+        let ens = ensemble_trainer::fit(
+            trainee,
+            ds.as_view(),
+            targets,
+            &self.ensemble_config,
+            self.train_config.seed,
+        );
+
+        Regressor {
+            ensemble: ens.into_iter().map(|t| t.tree).collect(),
+        }
+    }
+}
 impl Regressor {
     /// Predicts regression values for a set of samples using `num_threads` threads.
     pub fn predict(&self, dataset: &[f32], num_threads: usize) -> Vec<FloatTarget> {
@@ -97,46 +116,23 @@ impl Regressor {
         ensemble_predictor::predict(&self.ensemble, &view, 1)[0]
     }
 
-    /// Trains a random forest regressor with dataset given by a slice of length divisible by
-    /// targets.len().
-    pub fn fit(data: &[f32], targets: &[FloatTarget], config: &RegressorConfig) -> Regressor {
-        let ds = Dataset::with_transposed(data, targets.len());
-        let trainee = Trainee::new(config.train_config.clone());
-        let ens = ensemble_trainer::fit(
-            trainee,
-            ds.as_view(),
-            targets,
-            &config.ensemble_config,
-            config.train_config.seed,
-        );
-
-        Regressor {
-            ensemble: ens.into_iter().map(|t| t.tree).collect(),
-        }
-    }
-
-    /// Returns a number of features for a trained forest.
-    pub fn num_features(&self) -> usize {
-        self.ensemble[0].num_features()
-    }
-
-    /// Returns training config filled with default values.
-    pub fn default_config() -> RegressorConfig {
-        RegressorConfig::default()
+    /// Provides trainer for training a random forest regressor.
+    pub fn trainer() -> Trainer {
+        Trainer::default() 
     }
 }
 
-impl TrainConfigProvider for RegressorConfig {
+impl TrainConfigProvider for Trainer {
     fn train_config(&mut self) -> &mut TrainConfig {
         &mut self.train_config
     }
 }
 
-impl EnsembleConfigProvider for RegressorConfig {
+impl EnsembleConfigProvider for Trainer {
     fn ensemble_config(&mut self) -> &mut EnsembleConfig {
         &mut self.ensemble_config
     }
 }
 
-impl CommonConfigBuilder for RegressorConfig {}
-impl EnsembleConfigBuilder for RegressorConfig {}
+impl CommonConfigBuilder for Trainer {}
+impl EnsembleConfigBuilder for Trainer {}
