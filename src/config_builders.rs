@@ -1,6 +1,7 @@
 use crate::config;
+use crate::decision_tree::trainer;
 pub trait TrainConfigProvider: Sized {
-    fn train_config(&mut self) -> &mut crate::config::TrainConfig;
+    fn train_config(&mut self) -> &mut trainer::Config;
 }
 
 pub trait CommonConfigBuilder: TrainConfigProvider {
@@ -17,7 +18,7 @@ pub trait CommonConfigBuilder: TrainConfigProvider {
     }
 
     /// Sets maximum features to consider in split.
-    fn with_max_features(&mut self, max_features: config::NumFeatures) -> &mut Self {
+    fn with_max_features(&mut self, max_features: trainer::MaxFeaturesPolicy) -> &mut Self {
         self.train_config().max_features = max_features;
         self
     }
@@ -35,21 +36,21 @@ pub trait CommonConfigBuilder: TrainConfigProvider {
     }
 }
 
-pub trait ClassifierConfigBuilder: TrainConfigProvider {
-    /// Sets metric to Gini index.
-    fn with_gini(&mut self) -> &mut Self {
-        self.train_config().metric = config::Metric::GINI;
-        self
-    }
-}
+// pub trait ClassifierConfigBuilder: TrainConfigProvider {
+//     /// Sets metric to Gini index.
+//     fn with_gini(&mut self) -> &mut Self {
+//         self.train_config().metric = config::Metric::GINI;
+//         self
+//     }
+// }
 
-pub trait RegressorConfigBuilder: TrainConfigProvider {
-    /// Sets metric to MSE.
-    fn with_mse(&mut self) -> &mut Self {
-        self.train_config().metric = config::Metric::MSE;
-        self
-    }
-}
+// pub trait RegressorConfigBuilder: TrainConfigProvider {
+//     /// Sets metric to MSE.
+//     fn with_mse(&mut self) -> &mut Self {
+//         self.train_config().metric = config::Metric::MSE;
+//         self
+//     }
+// }
 
 pub trait EnsembleConfigProvider: Sized {
     fn ensemble_config(&mut self) -> &mut crate::config::EnsembleConfig;

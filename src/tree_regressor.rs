@@ -1,7 +1,8 @@
 use super::{decision_tree::RegressorModel, TrainView};
-use crate::config::{Metric, NumFeatures, TrainConfig};
 use crate::config_builders::*;
 use crate::{Dataset, DatasetView, FloatTarget};
+use crate::decision_tree;
+use crate::MaxFeaturesPolicy;
 
 use serde::{Deserialize, Serialize};
 
@@ -30,18 +31,17 @@ pub struct Regressor {
 /// min_samples_leaf: 1,
 /// min_samples_split: 2
 /// ```
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Trainer {
-    pub config: TrainConfig,
+    pub config: decision_tree::trainer::Config,
 }
 
 impl Default for Trainer {
     fn default() -> Self {
         Self {
-            config: TrainConfig {
+            config: decision_tree::trainer::Config {
                 max_depth: usize::MAX,
-                max_features: NumFeatures::NUMBER(usize::MAX),
-                metric: Metric::MSE,
+                max_features: MaxFeaturesPolicy::NUMBER(usize::MAX),
                 seed: 42,
                 min_samples_leaf: 1,
                 min_samples_split: 2,
@@ -51,13 +51,13 @@ impl Default for Trainer {
 }
 
 impl TrainConfigProvider for Trainer {
-    fn train_config(&mut self) -> &mut TrainConfig {
+    fn train_config(&mut self) -> &mut decision_tree::trainer::Config {
         &mut self.config
     }
 }
 
 impl CommonConfigBuilder for Trainer {}
-impl RegressorConfigBuilder for Trainer {}
+//impl RegressorConfigBuilder for Trainer {}
 
 impl Trainer {
     /// Trains a regression tree with dataset given by a slice of length divisible by targets.len().

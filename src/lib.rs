@@ -84,6 +84,7 @@ use argminmax::ArgMinMax;
 use classes_mapping::{ClassDecode, ClassesMapping};
 use dataset::{Dataset, DatasetView};
 use decision_tree::TrainView;
+pub use decision_tree::trainer::MaxFeaturesPolicy;
 
 type ClassTarget = u32;
 type FloatTarget = f32;
@@ -92,9 +93,10 @@ type SampleWeight = f32;
 type IndexRange = std::ops::Range<usize>;
 
 pub mod prelude {
+    pub use crate::MaxFeaturesPolicy;
     pub use crate::classes_mapping::ClassDecode;
     pub use crate::config_builders::{
-        ClassifierConfigBuilder, CommonConfigBuilder, EnsembleConfigBuilder, RegressorConfigBuilder,
+        CommonConfigBuilder, EnsembleConfigBuilder,
     };
 }
 

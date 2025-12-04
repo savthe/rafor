@@ -1,9 +1,10 @@
 use crate::{
     classify, config::*, config_builders::*, decision_tree::ClassifierModel, ensemble_predictor,
     ensemble_trainer, ClassDecode, ClassTarget, ClassesMapping, Dataset, DatasetView, TrainView,
+    decision_tree
 };
 use serde::{Deserialize, Serialize};
-
+use crate::MaxFeaturesPolicy;
 /// A random forest classifier.
 /// # Example
 /// ```
@@ -32,20 +33,19 @@ pub struct Classifier {
 /// num_trees: 100,
 /// num_threads: 1,
 ///```
-#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Trainer {
-    pub train_config: TrainConfig,
+    pub train_config: decision_tree::trainer::Config,
     pub ensemble_config: EnsembleConfig,
 }
 
 impl Default for Trainer {
     fn default() -> Self {
         Self {
-            train_config: TrainConfig {
+            train_config: decision_tree::trainer::Config {
                 max_depth: usize::MAX,
-                max_features: NumFeatures::SQRT,
+                max_features: MaxFeaturesPolicy::SQRT,
                 seed: 42,
-                metric: Metric::GINI,
                 min_samples_leaf: 1,
                 min_samples_split: 2,
             },
@@ -61,7 +61,7 @@ impl Default for Trainer {
 struct Trainee {
     tree: ClassifierModel,
     num_classes: usize,
-    conf: TrainConfig,
+    conf: decision_tree::trainer::Config,
 }
 
 impl ensemble_trainer::Trainable<ClassTarget> for Trainee {
@@ -145,7 +145,7 @@ impl ClassDecode for Classifier {
 }
 
 impl TrainConfigProvider for Trainer {
-    fn train_config(&mut self) -> &mut TrainConfig {
+    fn train_config(&mut self) -> &mut decision_tree::trainer::Config {
         &mut self.train_config
     }
 }

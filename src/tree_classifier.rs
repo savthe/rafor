@@ -1,10 +1,11 @@
 use super::{decision_tree::ClassifierModel, TrainView};
 use crate::{
     classify,
-    config::{Metric, NumFeatures, TrainConfig},
     config_builders::*,
     ClassDecode, ClassesMapping, Dataset, DatasetView,
+    decision_tree
 };
+use crate::MaxFeaturesPolicy;
 use argminmax::ArgMinMax;
 use serde::{Deserialize, Serialize};
 
@@ -34,19 +35,18 @@ pub struct Classifier {
 /// min_samples_leaf: 1,
 /// min_samples_split: 2
 /// ```
-#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Trainer {
-    config: TrainConfig
+    config: decision_tree::trainer::Config
 }
 
 impl Default for Trainer {
     fn default() -> Self {
         Self {
-            config: TrainConfig {
+            config: decision_tree::trainer::Config {
                 max_depth: usize::MAX,
-                max_features: NumFeatures::NUMBER(usize::MAX),
+                max_features: MaxFeaturesPolicy::NUMBER(usize::MAX),
                 seed: 42,
-                metric: Metric::GINI,
                 min_samples_leaf: 1,
                 min_samples_split: 2,
             },
@@ -55,13 +55,13 @@ impl Default for Trainer {
 }
 
 impl TrainConfigProvider for Trainer {
-    fn train_config(&mut self) -> &mut TrainConfig {
+    fn train_config(&mut self) -> &mut decision_tree::trainer::Config {
         &mut self.config
     }
 }
 
 impl CommonConfigBuilder for Trainer {}
-impl ClassifierConfigBuilder for Trainer {}
+//impl ClassifierConfigBuilder for Trainer {}
 
 impl Trainer {
     /// Trains a classifier tree with dataset given by a slice of length divisible by targets.len().

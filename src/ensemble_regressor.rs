@@ -1,7 +1,9 @@
 use crate::{
     config::*, config_builders::*, decision_tree::RegressorModel, ensemble_predictor,
     ensemble_trainer, Dataset, DatasetView, FloatTarget, TrainView,
+    decision_tree
 };
+use crate::MaxFeaturesPolicy;
 use serde::{Deserialize, Serialize};
 
 /// A random forest regressor.
@@ -23,7 +25,7 @@ pub struct Regressor {
 /// # Default values:
 /// ```ignore
 /// max_depth: usize::MAX,
-/// max_features: NumFeatures::NUMBER(usize::MAX),
+/// max_features: MaxFeaturesPolicy::NUMBER(usize::MAX),
 /// seed: 42,
 /// metric: Metric::MSE,
 /// min_samples_leaf: 1,
@@ -31,20 +33,19 @@ pub struct Regressor {
 /// num_trees: 100,
 /// num_threads: 1,
 /// ```
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Trainer {
-    pub train_config: TrainConfig,
+    pub train_config: decision_tree::trainer::Config,
     pub ensemble_config: EnsembleConfig,
 }
 
 impl Default for Trainer {
     fn default() -> Self {
         Self {
-            train_config: TrainConfig {
+            train_config: decision_tree::trainer::Config {
                 max_depth: usize::MAX,
-                max_features: NumFeatures::NUMBER(usize::MAX),
+                max_features: MaxFeaturesPolicy::NUMBER(usize::MAX),
                 seed: 42,
-                metric: Metric::MSE,
                 min_samples_leaf: 1,
                 min_samples_split: 2,
             },
@@ -59,11 +60,11 @@ impl Default for Trainer {
 #[derive(Clone)]
 struct Trainee {
     tree: RegressorModel,
-    train_config: TrainConfig,
+    train_config: decision_tree::trainer::Config,
 }
 
 impl Trainee {
-    fn new(train_config: TrainConfig) -> Self {
+    fn new(train_config: decision_tree::trainer::Config) -> Self {
         Self {
             tree: RegressorModel::default(),
             train_config,
@@ -123,7 +124,7 @@ impl Regressor {
 }
 
 impl TrainConfigProvider for Trainer {
-    fn train_config(&mut self) -> &mut TrainConfig {
+    fn train_config(&mut self) -> &mut decision_tree::trainer::Config {
         &mut self.train_config
     }
 }
