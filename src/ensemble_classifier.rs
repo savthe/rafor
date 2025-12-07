@@ -1,11 +1,23 @@
 use crate::{
-    classify, config::*, config_builders::*, decision_tree::ClassifierModel, ensemble_predictor,
+    classify, config::*, trainer_builders::*, decision_tree::ClassifierModel, ensemble_predictor,
     ensemble_trainer, ClassDecode, ClassTarget, ClassesMapping, Dataset, DatasetView, TrainView,
     decision_tree
 };
 use serde::{Deserialize, Serialize};
 use crate::MaxFeaturesPolicy;
 /// A random forest classifier.
+/// # Training
+/// The [Trainer] implements [CommonTrainerBuilder] and [EnsembleTrainerBuilder]. Default training
+/// parameters:
+/// ```text
+/// max_depth: usize::MAX,
+/// max_features: NumFeatures::SQRT,
+/// seed: 42,
+/// min_samples_leaf: 1,
+/// min_samples_split: 2,
+/// num_trees: 100,
+/// num_threads: 1,
+///```
 /// # Example
 /// ```
 /// use rafor::rf;
@@ -15,6 +27,7 @@ use crate::MaxFeaturesPolicy;
 /// let predictions = predictor.predict(&dataset, 1);
 /// assert_eq!(&predictions, &[1, 5, 1]);
 /// ```
+///
 #[derive(Default, Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub struct Classifier {
     ensemble: Vec<ClassifierModel>,
@@ -22,17 +35,6 @@ pub struct Classifier {
 }
 
 /// Trainer for ensemble classifier.
-/// # Default values:
-/// ```ignore
-/// max_depth: usize::MAX,
-/// max_features: NumFeatures::SQRT,
-/// seed: 42,
-/// metric: Metric::GINI,
-/// min_samples_leaf: 1,
-/// min_samples_split: 2,
-/// num_trees: 100,
-/// num_threads: 1,
-///```
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Trainer {
     pub train_config: decision_tree::trainer::Config,
@@ -156,5 +158,5 @@ impl EnsembleConfigProvider for Trainer {
     }
 }
 
-impl CommonConfigBuilder for Trainer {}
-impl EnsembleConfigBuilder for Trainer {}
+impl CommonTrainerBuilder for Trainer {}
+impl EnsembleTrainerBuilder for Trainer {}

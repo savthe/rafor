@@ -1,5 +1,5 @@
 use super::{decision_tree::RegressorModel, TrainView};
-use crate::config_builders::*;
+use crate::trainer_builders::*;
 use crate::{Dataset, DatasetView, FloatTarget};
 use crate::decision_tree;
 use crate::MaxFeaturesPolicy;
@@ -7,6 +7,16 @@ use crate::MaxFeaturesPolicy;
 use serde::{Deserialize, Serialize};
 
 /// A regression tree.
+/// # Training
+/// The [Trainer] implements [CommonTrainerBuilder]. Default training parameters:
+/// ```text
+/// max_depth: usize::MAX,
+/// max_features: NumFeatures::NUMBER(usize::MAX),
+/// seed: 42,
+/// min_samples_leaf: 1,
+/// min_samples_split: 2,
+///```
+///
 /// # Example
 /// ```
 /// use rafor::dt;
@@ -22,15 +32,6 @@ pub struct Regressor {
 }
 
 /// Trainer for tree regressor.
-/// # Default values:
-/// ```ignore
-/// max_depth: usize::MAX,
-/// max_features: NumFeatures::NUMBER(usize::MAX),
-/// metric: Metric::MSE,
-/// seed: 42,
-/// min_samples_leaf: 1,
-/// min_samples_split: 2
-/// ```
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Trainer {
     pub config: decision_tree::trainer::Config,
@@ -56,7 +57,7 @@ impl TrainConfigProvider for Trainer {
     }
 }
 
-impl CommonConfigBuilder for Trainer {}
+impl CommonTrainerBuilder for Trainer {}
 //impl RegressorConfigBuilder for Trainer {}
 
 impl Trainer {

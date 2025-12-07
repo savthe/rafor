@@ -1,7 +1,7 @@
 use super::{decision_tree::ClassifierModel, TrainView};
 use crate::{
     classify,
-    config_builders::*,
+    trainer_builders::*,
     ClassDecode, ClassesMapping, Dataset, DatasetView,
     decision_tree
 };
@@ -10,6 +10,17 @@ use argminmax::ArgMinMax;
 use serde::{Deserialize, Serialize};
 
 /// A classifier tree.
+/// # Training
+/// The [Trainer] implements [CommonTrainerBuilder]. Default training
+/// parameters:
+/// ```text
+/// max_depth: usize::MAX,
+/// max_features: NumFeatures::NUMBER(usize::MAX),
+/// seed: 42,
+/// min_samples_leaf: 1,
+/// min_samples_split: 2,
+///```
+///
 /// # Examples
 /// ```
 /// use rafor::dt;
@@ -26,15 +37,6 @@ pub struct Classifier {
 }
 
 /// A trainer for tree classifier.
-/// # Default values:
-/// ```ignore
-/// max_depth: usize::MAX,
-/// max_features: NumFeatures::NUMBER(usize::MAX),
-/// seed: 42,
-/// metric: Metric::GINI,
-/// min_samples_leaf: 1,
-/// min_samples_split: 2
-/// ```
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Trainer {
     config: decision_tree::trainer::Config
@@ -60,7 +62,7 @@ impl TrainConfigProvider for Trainer {
     }
 }
 
-impl CommonConfigBuilder for Trainer {}
+impl CommonTrainerBuilder for Trainer {}
 //impl ClassifierConfigBuilder for Trainer {}
 
 impl Trainer {

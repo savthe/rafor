@@ -1,5 +1,5 @@
 use crate::{
-    config::*, config_builders::*, decision_tree::RegressorModel, ensemble_predictor,
+    config::*, trainer_builders::*, decision_tree::RegressorModel, ensemble_predictor,
     ensemble_trainer, Dataset, DatasetView, FloatTarget, TrainView,
     decision_tree
 };
@@ -7,6 +7,18 @@ use crate::MaxFeaturesPolicy;
 use serde::{Deserialize, Serialize};
 
 /// A random forest regressor.
+/// # Training
+/// The [Trainer] implements [CommonTrainerBuilder] and [EnsembleTrainerBuilder]. Default training
+/// parameters:
+/// ```text
+/// max_depth: usize::MAX,
+/// max_features: NumFeatures::SQRT,
+/// seed: 42,
+/// min_samples_leaf: 1,
+/// min_samples_split: 2,
+/// num_trees: 100,
+/// num_threads: 1,
+///```
 /// # Example
 /// ```
 /// use rafor::rf;
@@ -21,18 +33,7 @@ pub struct Regressor {
     ensemble: Vec<RegressorModel>,
 }
 
-/// Configuration for ensemble regressor.
-/// # Default values:
-/// ```ignore
-/// max_depth: usize::MAX,
-/// max_features: MaxFeaturesPolicy::NUMBER(usize::MAX),
-/// seed: 42,
-/// metric: Metric::MSE,
-/// min_samples_leaf: 1,
-/// min_samples_split: 2,
-/// num_trees: 100,
-/// num_threads: 1,
-/// ```
+/// Trainer for ensemble regressor.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Trainer {
     pub train_config: decision_tree::trainer::Config,
@@ -135,5 +136,5 @@ impl EnsembleConfigProvider for Trainer {
     }
 }
 
-impl CommonConfigBuilder for Trainer {}
-impl EnsembleConfigBuilder for Trainer {}
+impl CommonTrainerBuilder for Trainer {}
+impl EnsembleTrainerBuilder for Trainer {}
