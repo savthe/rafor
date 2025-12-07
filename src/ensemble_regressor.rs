@@ -1,10 +1,11 @@
 use crate::{
-    config::*, trainer_builders::*, decision_tree::RegressorModel, ensemble_predictor,
+    trainer_builders::*, decision_tree::RegressorModel, ensemble_predictor,
     ensemble_trainer, Dataset, DatasetView, FloatTarget, TrainView,
     decision_tree
 };
 use crate::MaxFeaturesPolicy;
 use serde::{Deserialize, Serialize};
+use ensemble_trainer::EnsembleConfig;
 
 /// A random forest regressor.
 /// # Training

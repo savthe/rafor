@@ -1,4 +1,6 @@
 use crate::decision_tree::trainer;
+use crate::ensemble_trainer;
+use ensemble_trainer::EnsembleConfig;
 pub trait TrainConfigProvider: Sized {
     fn train_config(&mut self) -> &mut trainer::Config;
 }
@@ -52,7 +54,7 @@ pub trait CommonTrainerBuilder: TrainConfigProvider {
 // }
 
 pub trait EnsembleConfigProvider: Sized {
-    fn ensemble_config(&mut self) -> &mut crate::config::EnsembleConfig;
+    fn ensemble_config(&mut self) -> &mut EnsembleConfig;
 }
 
 pub trait EnsembleTrainerBuilder: EnsembleConfigProvider + CommonTrainerBuilder {

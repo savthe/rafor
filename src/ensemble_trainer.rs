@@ -1,10 +1,21 @@
-use crate::{config::EnsembleConfig, DatasetView, SampleWeight, TrainView};
+use crate::{DatasetView, SampleWeight, TrainView};
 use rand::{rngs::SmallRng, Rng, SeedableRng};
 use std::{
     sync::atomic::{AtomicUsize, Ordering},
     sync::Arc,
     thread,
 };
+
+// Configuration for training the ensembles of trees.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct EnsembleConfig {
+    /// Number of decision trees in ensemble.
+    pub num_trees: usize,
+
+    /// Number of threads to use. Please note that there is no specific value for "use all cores".
+    /// Maximun number of theads can be obtained useing, for instance, crate `num_cpus`.
+    pub num_threads: usize,
+}
 
 pub trait Trainable<T: Copy> {
     fn fit(&mut self, ts: TrainView<T>, seed: u64);

@@ -113,7 +113,6 @@
 //! }
 //! ```
 mod classes_mapping;
-pub mod config;
 mod dataset;
 mod decision_tree;
 pub mod ensemble_classifier;

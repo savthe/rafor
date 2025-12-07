@@ -1,10 +1,11 @@
 use crate::{
-    classify, config::*, trainer_builders::*, decision_tree::ClassifierModel, ensemble_predictor,
+    classify, trainer_builders::*, decision_tree::ClassifierModel, ensemble_predictor,
     ensemble_trainer, ClassDecode, ClassTarget, ClassesMapping, Dataset, DatasetView, TrainView,
     decision_tree
 };
 use serde::{Deserialize, Serialize};
 use crate::MaxFeaturesPolicy;
+use ensemble_trainer::EnsembleConfig;
 /// A random forest classifier.
 /// # Training
 /// The [Trainer] implements [CommonTrainerBuilder] and [EnsembleTrainerBuilder]. Default training
