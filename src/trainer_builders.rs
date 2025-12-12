@@ -1,11 +1,16 @@
 use crate::decision_tree::trainer;
 use crate::ensemble_trainer;
 use ensemble_trainer::EnsembleConfig;
+use crate::SampleWeight;
 pub trait TrainConfigProvider: Sized {
     fn train_config(&mut self) -> &mut trainer::Config;
 }
 
-pub trait CommonTrainerBuilder: TrainConfigProvider {
+pub trait SampleWeightsSetter: Sized {
+    fn set_sample_weights(&mut self, weights: &[SampleWeight]);
+}
+
+pub trait CommonTrainerBuilder: TrainConfigProvider + SampleWeightsSetter {
     /// Sets max tree depth (`max_depth`).
     fn with_max_depth(&mut self, n: usize) -> &mut Self {
         self.train_config().max_depth = n;

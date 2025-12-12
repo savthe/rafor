@@ -3,7 +3,8 @@ use crate::{
     classify,
     trainer_builders::*,
     ClassDecode, ClassesMapping, Dataset, DatasetView,
-    decision_tree
+    decision_tree,
+    SampleWeight
 };
 use crate::MaxFeaturesPolicy;
 use argminmax::ArgMinMax;
@@ -37,9 +38,11 @@ pub struct Classifier {
 }
 
 /// A trainer for tree classifier.
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct Trainer {
-    config: decision_tree::trainer::Config
+    config: decision_tree::trainer::Config,
+    weights: Vec<SampleWeight>
+        
 }
 
 impl Default for Trainer {
@@ -52,6 +55,7 @@ impl Default for Trainer {
                 min_samples_leaf: 1,
                 min_samples_split: 2,
             },
+            weights: Vec::new(),
         }
     }
 }
@@ -63,6 +67,12 @@ impl TrainConfigProvider for Trainer {
 }
 
 impl CommonTrainerBuilder for Trainer {}
+impl SampleWeightsSetter for Trainer {
+    fn set_sample_weights(&mut self, weights: &[SampleWeight]) {
+        self.weights = weights.to_vec();
+    }
+}
+
 //impl ClassifierConfigBuilder for Trainer {}
 
 impl Trainer {
@@ -70,8 +80,7 @@ impl Trainer {
     pub fn train(&self, raw_dataset: &[f32], labels: &[i64]) -> Classifier {
         let dataset = Dataset::with_transposed(raw_dataset, labels.len());
         let (classes_map, encoded_labels) = ClassesMapping::with_encode(labels);
-        let weights = vec![1.; labels.len()];
-        let tv = TrainView::new(dataset.as_view(), &encoded_labels, &weights);
+        let tv = TrainView::new(dataset.as_view(), &encoded_labels, &self.weights);
         Classifier {
             classifier: ClassifierModel::train(tv, classes_map.num_classes(), &self.config),
             classes_map,

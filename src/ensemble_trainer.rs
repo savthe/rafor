@@ -23,8 +23,7 @@ pub trait Trainable<T: Copy> {
 
 pub fn fit<Target, Trainee>(
     proto: Trainee,
-    view: DatasetView,
-    targets: &[Target],
+    tv: TrainView<Target>,
     config: &EnsembleConfig,
     seed: u64,
 ) -> Vec<Trainee>

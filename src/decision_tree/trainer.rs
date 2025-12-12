@@ -209,23 +209,42 @@ where
 }
 
 impl<'a, T: Copy> TrainSpace<'a, T> {
-    pub fn new(ts: TrainView<'a, T>) -> TrainSpace<'a, T> {
-        let amount = ts.weights.iter().filter(|&x| *x > 0.).count();
-        let mut samples: Vec<u32> = Vec::with_capacity(amount);
-        let mut weighted_targets: Vec<(T, SampleWeight)> = Vec::with_capacity(amount);
+    pub fn new(dataview: DatasetView<'a>, targets: &[T]) -> TrainSpace<'a, T> {
+        TrainSpace {
+            dataview,
+            samples: (0..targets.len()).map(|x| x as u32).collect(),
+            targets: targets.iter().map(|t| (*t, 1.)).collect(),
+        }
 
-        for (i, (&t, &w)) in ts.targets.iter().zip(ts.weights.iter()).enumerate() {
-            if w > 0. {
-                samples.push(i as u32);
-                weighted_targets.push((t, w));
+        // let amount = ts.weights.iter().filter(|&x| *x > 0.).count();
+        // let mut samples: Vec<u32> = Vec::with_capacity(amount);
+        // let mut weighted_targets: Vec<(T, SampleWeight)> = Vec::with_capacity(amount);
+        //
+        // for (i, (&t, &w)) in ts.targets.iter().zip(ts.weights.iter()).enumerate() {
+        //     if w > 0. {
+        //         samples.push(i as u32);
+        //         weighted_targets.push((t, w));
+        //     }
+        // }
+        //
+        // TrainSpace {
+        //     dataview: ts.dataview,
+        //     samples,
+        //     targets: weighted_targets,
+        // }
+    }
+
+    pub fn scale_weights(&mut self, scalars: &[SampleWeight]) {
+        if !scalars.is_empty() {
+            assert!(scalars.len() == self.targets.len());
+            for ((_, w), &s) in self.targets.iter_mut().zip(scalars.iter()) {
+                *w *= s;
             }
         }
+    }
 
-        TrainSpace {
-            dataview: ts.dataview,
-            samples,
-            targets: weighted_targets,
-        }
+    fn prune_zero_weights(&mut self) {
+        let 
     }
 
     #[inline(always)]
@@ -234,7 +253,7 @@ impl<'a, T: Copy> TrainSpace<'a, T> {
     }
 
     #[inline(always)]
-    pub fn targets(&self, range: &IndexRange) -> &[(T, SampleWeight)] {
+    fn targets(&self, range: &IndexRange) -> &[(T, SampleWeight)] {
         &&self.targets[range.clone()]
     }
 

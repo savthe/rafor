@@ -1,7 +1,7 @@
 use crate::{
     classify, trainer_builders::*, decision_tree::ClassifierModel, ensemble_predictor,
     ensemble_trainer, ClassDecode, ClassTarget, ClassesMapping, Dataset, DatasetView, TrainView,
-    decision_tree
+    decision_tree, SampleWeight
 };
 use serde::{Deserialize, Serialize};
 use crate::MaxFeaturesPolicy;
@@ -36,10 +36,12 @@ pub struct Classifier {
 }
 
 /// Trainer for ensemble classifier.
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct Trainer {
-    pub train_config: decision_tree::trainer::Config,
-    pub ensemble_config: EnsembleConfig,
+    train_config: decision_tree::trainer::Config,
+    ensemble_config: EnsembleConfig,
+    weights: Vec<SampleWeight>
+
 }
 
 impl Default for Trainer {
@@ -56,6 +58,7 @@ impl Default for Trainer {
                 num_trees: 100,
                 num_threads: 1,
             },
+            weights: Vec::new()
         }
     }
 }
@@ -77,6 +80,12 @@ impl ensemble_trainer::Trainable<ClassTarget> for Trainee {
 impl ensemble_predictor::Predictor for ClassifierModel {
     fn predict(&self, dataset: &DatasetView) -> Vec<f32> {
         self.predict(dataset)
+    }
+}
+
+impl SampleWeightsSetter for Trainer {
+    fn set_sample_weights(&mut self, weights: &[SampleWeight]) {
+        self.weights = weights.to_vec()
     }
 }
 

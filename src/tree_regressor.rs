@@ -1,6 +1,6 @@
 use super::{decision_tree::RegressorModel, TrainView};
 use crate::trainer_builders::*;
-use crate::{Dataset, DatasetView, FloatTarget};
+use crate::{Dataset, DatasetView, FloatTarget, SampleWeight};
 use crate::decision_tree;
 use crate::MaxFeaturesPolicy;
 
@@ -32,9 +32,10 @@ pub struct Regressor {
 }
 
 /// Trainer for tree regressor.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Trainer {
-    pub config: decision_tree::trainer::Config,
+    config: decision_tree::trainer::Config,
+    weights: Vec<SampleWeight>
 }
 
 impl Default for Trainer {
@@ -47,6 +48,7 @@ impl Default for Trainer {
                 min_samples_leaf: 1,
                 min_samples_split: 2,
             },
+            weights: Vec::new()
         }
     }
 }
@@ -58,14 +60,18 @@ impl TrainConfigProvider for Trainer {
 }
 
 impl CommonTrainerBuilder for Trainer {}
+impl SampleWeightsSetter for Trainer {
+    fn set_sample_weights(&mut self, weights: &[SampleWeight]) {
+        self.weights = weights.to_vec();
+    }
+}
 //impl RegressorConfigBuilder for Trainer {}
 
 impl Trainer {
     /// Trains a regression tree with dataset given by a slice of length divisible by targets.len().
     pub fn train(&self, raw_dataset: &[f32], targets: &[FloatTarget]) -> Regressor {
         let dataset = Dataset::with_transposed(raw_dataset, targets.len());
-        let weights = vec![1.; targets.len()];
-        let tv = TrainView::new(dataset.as_view(), &targets, &weights);
+        let tv = TrainView::new(dataset.as_view(), &targets, &self.weights);
 
         Regressor {
             regressor: RegressorModel::train(tv, &self.config),

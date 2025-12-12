@@ -1,7 +1,7 @@
 use crate::{
     trainer_builders::*, decision_tree::RegressorModel, ensemble_predictor,
     ensemble_trainer, Dataset, DatasetView, FloatTarget, TrainView,
-    decision_tree
+    decision_tree, SampleWeight
 };
 use crate::MaxFeaturesPolicy;
 use serde::{Deserialize, Serialize};
@@ -39,6 +39,7 @@ pub struct Regressor {
 pub struct Trainer {
     pub train_config: decision_tree::trainer::Config,
     pub ensemble_config: EnsembleConfig,
+    pub weights: Vec<SampleWeight>
 }
 
 impl Default for Trainer {
@@ -55,6 +56,7 @@ impl Default for Trainer {
                 num_trees: 100,
                 num_threads: 1,
             },
+            weights: Vec::new()
         }
     }
 }
@@ -84,6 +86,12 @@ impl ensemble_trainer::Trainable<FloatTarget> for Trainee {
 impl ensemble_predictor::Predictor for RegressorModel {
     fn predict(&self, dataset: &DatasetView) -> Vec<f32> {
         self.predict(dataset)
+    }
+}
+
+impl SampleWeightsSetter for Trainer {
+    fn set_sample_weights(&mut self, weights: &[SampleWeight]) {
+        self.weights = weights.to_vec()
     }
 }
 
