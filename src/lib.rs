@@ -1,11 +1,5 @@
 //! A decision trees and random forest implementation focused on delivering good performance.
 //!
-//! # Dataset
-//! Multiple samples for inference or training are provided as a single `f32` slice, where each chunk of
-//! the size of feature space (`num_features`) is treated as a feature vector of a single sample.
-//! During training, `num_features` is derieved as a length of the `f32` input vector of samples
-//! deviced by the number of proviced targets.
-//!
 //! # Classification
 //! Rafor provide a decision tree (DT) classifier [`dt::Classifier`] and a random forest (RF) classifier
 //! [`rf::Classifier`]. The class label is `i64` value. Classifiers use Gini index for
@@ -23,6 +17,12 @@
 //! Regression models are decision tree regressor [`dt::Regressor`] and random forest regressor
 //! [`rf::Regressor`]. The targets are `f32` values. By default regressors use MSE score for evaluating
 //! the split impurity.
+//!
+//! # Dataset
+//! Multiple samples for inference or training are provided as a single `f32` slice, where each chunk of
+//! the size of feature space (`num_features`) is treated as a feature vector of a single sample.
+//! During training, `num_features` is derieved as a length of the `f32` input vector of samples
+//! deviced by the number of proviced targets.
 //!
 //! # Model training
 //! All models provide method `trainer()` which returns a `Trainer` object for particular model. The
@@ -59,20 +59,6 @@
 //! # Model serialization and deserialization
 //! All models support [serde](https://docs.rs/serde/latest/serde/), so any lib that supports `serde`
 //! can be used for serialization and deserialization.
-//!
-//! # Space / performance considerations
-//! Rafor utilizes compact trees representation under the following restrictions:
-//! 1. split threshold is `f32`;
-//! 2. feature index is `u16`, up to 2^16 = 65,536 features allowed;
-//! 3. in regression tasks, the target type is `f32`;
-//! 4. in classification tasks, the class is represented by `u32` (the input `i64` labels are mapped
-//! into `u32` internally, and restored during prediction);
-//! 5. child node index is `u32`, up to 2^32 = 4,294,967,296 nodes allowed.
-//!
-//! The decision tree is represented by a vector of internal (parent) nodes. The leaf value
-//! (`f32` for regression trees, `u32` index pointing to the class probabilities for classification
-//! trees) is bit-packed into parent's `u32` child node index.
-//!
 //!
 //! # Example
 //! ```
@@ -112,6 +98,19 @@
 //!     }
 //! }
 //! ```
+//!
+//! # Space / performance considerations
+//! Rafor utilizes compact trees representation under the following restrictions:
+//! 1. split threshold is `f32`;
+//! 2. feature index is `u16`, up to 2^16 = 65,536 features allowed;
+//! 3. in regression tasks, the target type is `f32`;
+//! 4. in classification tasks, the class is represented by `u32` (the input `i64` labels are mapped
+//! into `u32` internally, and restored during prediction);
+//! 5. child node index is `u32`, up to 2^32 = 4,294,967,296 nodes allowed.
+//!
+//! The decision tree is represented by a vector of internal (parent) nodes. The leaf value
+//! (`f32` for regression trees, `u32` index pointing to the class probabilities for classification
+//! trees) is bit-packed into parent's `u32` child node index.
 mod classes_mapping;
 mod dataset;
 mod decision_tree;
