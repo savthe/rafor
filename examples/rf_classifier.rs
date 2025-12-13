@@ -1,6 +1,6 @@
-use num_cpus;
+use num_cpus; // Requires num_cpus dependency in Cargo.toml
 use rafor::prelude::*; // Required for .with_option builders and .num_classes().
-use rafor::rf::Classifier; // Requires num_cpus dependency in Cargo.toml
+use rafor::rf::Classifier;
 
 fn main() {
     // We have 5 samples with 3 classes.
