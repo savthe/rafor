@@ -4,10 +4,7 @@ use super::splitter::MseSplitter;
 
 use super::trainer;
 use super::TrainView;
-use crate::{
-    config::{Metric, TrainConfig},
-    DatasetView, FloatTarget, SampleWeight,
-};
+use crate::{DatasetView, FloatTarget, SampleWeight};
 
 use serde::{Deserialize, Serialize};
 
@@ -34,17 +31,14 @@ impl RegressorModel {
         f32::from_bits(self.tree.predict(sample))
     }
 
-    pub fn train(tv: TrainView<FloatTarget>, config: &TrainConfig) -> RegressorModel {
+    pub fn train(tv: TrainView<FloatTarget>, config: &trainer::Config) -> RegressorModel {
         let mut aggregator = Aggregator::default();
-        let tree = match config.metric {
-            Metric::MSE => trainer::train(
-                tv,
-                config.clone(),
-                MseSplitter::new(config.min_samples_leaf),
-                &mut aggregator,
-            ),
-            _ => panic!("Metric is not supported for regressor tree"),
-        };
+        let tree = trainer::train(
+            tv,
+            config.clone(),
+            MseSplitter::new(config.min_samples_leaf),
+            &mut aggregator,
+        );
 
         RegressorModel { tree }
     }

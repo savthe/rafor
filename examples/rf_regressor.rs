@@ -1,9 +1,10 @@
-use rafor::rf::Regressor;
-use rafor::prelude::*; // Required for .with_option builders.
 use num_cpus; // Requires num_cpus dependency in Cargo.toml
+use rafor::prelude::*; // Required for .with_option builders.
+use rafor::rf::Regressor;
 
 fn main() {
     // 5 samples with 2 features each.
+    #[rustfmt::skip]
     let dataset = [
         0.7, 0.0, 
         0.8, 1.0, 
@@ -12,15 +13,12 @@ fn main() {
         0.4, 2.1
     ];
     let targets = [0.8, 0.2, 0.7, 0.3, 1.2];
-    let predictor = Regressor::fit(
-        &dataset,
-        &targets,
-        Regressor::default_config()
-            .with_max_depth(15)
-            .with_trees(40)
-            .with_threads(num_cpus::get())
-            .with_seed(42),
-    );
+    let predictor = Regressor::trainer()
+        .with_max_depth(15)
+        .with_trees(40)
+        .with_threads(num_cpus::get())
+        .with_seed(42)
+        .train(&dataset, &targets);
 
     // Get predictions for same dataset.
     let predictions = predictor.predict(&dataset, num_cpus::get());

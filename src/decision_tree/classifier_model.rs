@@ -2,10 +2,7 @@ use super::splitter::GiniSplitter;
 use super::trainer;
 use super::DecisionTree;
 use super::TrainView;
-use crate::{
-    config::{Metric, TrainConfig},
-    ClassTarget, DatasetView, SampleWeight,
-};
+use crate::{ClassTarget, DatasetView, SampleWeight};
 
 use serde::{Deserialize, Serialize};
 
@@ -46,17 +43,18 @@ impl ClassifierModel {
         &self.proba[i..i + self.num_classes]
     }
 
-    pub fn train(tv: TrainView<ClassTarget>, num_cls: usize, cfg: &TrainConfig) -> ClassifierModel {
+    pub fn train(
+        tv: TrainView<ClassTarget>,
+        num_cls: usize,
+        cfg: &trainer::Config,
+    ) -> ClassifierModel {
         let mut probability_aggr = ProbabilityAggregator::new(num_cls);
-        let tree = match cfg.metric {
-            Metric::GINI => trainer::train(
-                tv,
-                cfg.clone(),
-                GiniSplitter::new(num_cls, cfg.min_samples_leaf),
-                &mut probability_aggr,
-            ),
-            _ => panic!("Metric is not supported for classifier tree"),
-        };
+        let tree = trainer::train(
+            tv,
+            cfg.clone(),
+            GiniSplitter::new(num_cls, cfg.min_samples_leaf),
+            &mut probability_aggr,
+        );
 
         ClassifierModel {
             proba: probability_aggr.proba,

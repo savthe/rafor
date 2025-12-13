@@ -3,7 +3,6 @@ use super::splitter::Splitter;
 use super::TrainView;
 use crate::SampleWeight;
 use crate::{
-    config::{NumFeatures, TrainConfig},
     DatasetView, IndexRange,
 };
 use radsort;
@@ -14,6 +13,44 @@ struct Split {
     feature: usize,
     pivot: usize,
     threshold: f32,
+}
+
+// TODO check that we don't need to add one.
+/// Defines the limiting strategy for a number of features that are selected at each split.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub enum MaxFeaturesPolicy {
+    /// Takes `sqrt(total_features)`.
+    SQRT,
+    /// Takes `log2(total_features)`.
+    LOG,
+    /// Sets the exact number.
+    NUMBER(usize),
+}
+
+/// Configuration for training a decision tree.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct Config {
+    /// Max depth of a tree.
+    pub max_depth: usize,
+
+    /// Seed for randomizing feature sets in splits if `max_features < num_features`. When used in
+    /// ensemble config, it sets the seed for random numbers in bootstrapping and feature sets in
+    /// splits.
+    pub seed: u64,
+
+    /// Maximum number of features to use in each split. If `max_features` is less than total
+    /// amount of features, at each split will be used a random subset of features with size at
+    /// least `num_features`.
+    ///
+    /// **Note**. If trainer is unable find a splitting value in `num_features` features, it will
+    /// consider additional features.
+    pub max_features: MaxFeaturesPolicy,
+
+    /// Minimal number of samples in the node that can be splitted.
+    pub min_samples_split: usize,
+
+    /// Forces leaves to have at least min_samples_leaf samples.
+    pub min_samples_leaf: usize,
 }
 
 struct FeaturePermutation {
@@ -34,7 +71,7 @@ where
     Aggr: Aggregator<Target>,
 {
     max_features: usize,
-    conf: TrainConfig,
+    conf: Config,
     space: TrainSpace<'a, Target>,
     tree: DecisionTree,
     splitter: S,
@@ -67,7 +104,7 @@ impl FeaturePermutation {
 
 pub fn train<Target: Copy>(
     tv: TrainView<Target>,
-    conf: TrainConfig,
+    conf: Config,
     splitter: impl Splitter<Target>,
     aggregator: &mut impl Aggregator<Target>,
 ) -> DecisionTree {
@@ -75,9 +112,9 @@ pub fn train<Target: Copy>(
     let num_features = space.num_features();
 
     let max_features = match conf.max_features {
-        NumFeatures::SQRT => (num_features as f32).sqrt() as usize,
-        NumFeatures::LOG => (num_features as f32).log2() as usize,
-        NumFeatures::NUMBER(n) => n.min(num_features),
+        MaxFeaturesPolicy::SQRT => (num_features as f32).sqrt() as usize,
+        MaxFeaturesPolicy::LOG => (num_features as f32).log2() as usize,
+        MaxFeaturesPolicy::NUMBER(n) => n.min(num_features),
     };
 
     let rng = (max_features < num_features).then_some(SmallRng::seed_from_u64(conf.seed));
