@@ -1,8 +1,7 @@
 use super::splitter::GiniSplitter;
 use super::trainer;
 use super::DecisionTree;
-use super::TrainView;
-use crate::{ClassTarget, DatasetView, SampleWeight};
+use crate::{ClassTarget, SampleWeight, Trainset};
 
 use serde::{Deserialize, Serialize};
 
@@ -20,12 +19,15 @@ struct ProbabilityAggregator {
 }
 
 impl ClassifierModel {
-    pub fn predict(&self, dataset: &DatasetView) -> Vec<f32> {
-        let mut result = vec![0.; dataset.size() * self.num_classes];
+    pub fn predict(&self, dataset: &[f32]) -> Vec<f32> {
+        let num_features = self.tree.num_features();
+        assert!(dataset.len() % num_features == 0);
+        let num_samples = dataset.len() / num_features;
+        let mut result = vec![0.; num_samples * self.num_classes];
 
         for (r, sample) in result
             .chunks_exact_mut(self.num_classes)
-            .zip(dataset.samples())
+            .zip(dataset.chunks_exact(num_features))
         {
             r.copy_from_slice(self.predict_one(sample));
         }
@@ -44,13 +46,13 @@ impl ClassifierModel {
     }
 
     pub fn train(
-        tv: TrainView<ClassTarget>,
+        ts: Trainset<ClassTarget>,
         num_cls: usize,
         cfg: &trainer::Config,
     ) -> ClassifierModel {
         let mut probability_aggr = ProbabilityAggregator::new(num_cls);
         let tree = trainer::train(
-            tv,
+            ts,
             cfg.clone(),
             GiniSplitter::new(num_cls, cfg.min_samples_leaf),
             &mut probability_aggr,

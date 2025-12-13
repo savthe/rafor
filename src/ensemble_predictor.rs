@@ -4,15 +4,13 @@ use std::sync::{
 };
 use std::thread;
 
-use crate::DatasetView;
-
 pub trait Predictor {
-    fn predict(&self, dataset: &DatasetView) -> Vec<f32>;
+    fn predict(&self, dataset: &[f32]) -> Vec<f32>;
 }
 
 pub fn predict<P: Predictor + Sync + Send>(
     predictors: &Vec<P>,
-    dataset: &DatasetView,
+    dataset: &[f32],
     num_threads: usize,
 ) -> Vec<f32> {
     let mut result: Vec<f32> = Vec::new();

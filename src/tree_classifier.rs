@@ -1,9 +1,10 @@
-use super::{decision_tree::ClassifierModel, TrainView};
+use super::{decision_tree::ClassifierModel, Trainset};
 use crate::{
     classify,
     trainer_builders::*,
-    ClassDecode, ClassesMapping, Dataset, DatasetView,
-    decision_tree
+    ClassDecode, ClassesMapping,
+    decision_tree,
+    transposed
 };
 use crate::MaxFeaturesPolicy;
 use argminmax::ArgMinMax;
@@ -67,13 +68,12 @@ impl CommonTrainerBuilder for Trainer {}
 
 impl Trainer {
     /// Trains a classifier tree with dataset given by a slice of length divisible by targets.len().
-    pub fn train(&self, raw_dataset: &[f32], labels: &[i64]) -> Classifier {
-        let dataset = Dataset::with_transposed(raw_dataset, labels.len());
+    pub fn train(&self, data: &[f32], labels: &[i64]) -> Classifier {
+        let dataset = transposed(data, labels.len());
         let (classes_map, encoded_labels) = ClassesMapping::with_encode(labels);
-        let weights = vec![1.; labels.len()];
-        let tv = TrainView::new(dataset.as_view(), &encoded_labels, &weights);
+        let ts = Trainset::new(&dataset, &encoded_labels);
         Classifier {
-            classifier: ClassifierModel::train(tv, classes_map.num_classes(), &self.config),
+            classifier: ClassifierModel::train(ts, classes_map.num_classes(), &self.config),
             classes_map,
         }
     }
@@ -94,8 +94,7 @@ impl Classifier {
     /// Predicts classes probabilities for each sample. The length of result vector is
     /// number_of_samples * num_classes().
     pub fn proba(&self, dataset: &[f32]) -> Vec<f32> {
-        let view = DatasetView::new(dataset, self.classifier.num_features());
-        self.classifier.predict(&view)
+        self.classifier.predict(dataset)
     }
 
     /// Provides trainer for training a classifier tree.

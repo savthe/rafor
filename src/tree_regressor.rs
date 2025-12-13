@@ -1,8 +1,9 @@
-use super::{decision_tree::RegressorModel, TrainView};
+use super::{decision_tree::RegressorModel, Trainset};
 use crate::trainer_builders::*;
-use crate::{Dataset, DatasetView, FloatTarget};
+use crate::{FloatTarget};
 use crate::decision_tree;
 use crate::MaxFeaturesPolicy;
+use crate::transposed;
 
 use serde::{Deserialize, Serialize};
 
@@ -62,13 +63,12 @@ impl CommonTrainerBuilder for Trainer {}
 
 impl Trainer {
     /// Trains a regression tree with dataset given by a slice of length divisible by targets.len().
-    pub fn train(&self, raw_dataset: &[f32], targets: &[FloatTarget]) -> Regressor {
-        let dataset = Dataset::with_transposed(raw_dataset, targets.len());
-        let weights = vec![1.; targets.len()];
-        let tv = TrainView::new(dataset.as_view(), &targets, &weights);
+    pub fn train(&self, data: &[f32], targets: &[FloatTarget]) -> Regressor {
+        let dataset = transposed(data, targets.len());
+        let trainset = Trainset::new(&dataset, &targets);
 
         Regressor {
-            regressor: RegressorModel::train(tv, &self.config),
+            regressor: RegressorModel::train(trainset, &self.config),
         }
     }
 }
@@ -77,8 +77,8 @@ impl Regressor {
     /// Predicts regression values for a set of samples.
     /// Dataset is a vector of floats with length multiple of num_features().
     pub fn predict(&self, dataset: &[f32]) -> Vec<FloatTarget> {
-        let view = DatasetView::new(dataset, self.regressor.num_features());
-        self.regressor.predict(&view)
+        //let view = DatasetView::new(dataset, self.regressor.num_features());
+        self.regressor.predict(dataset)
     }
 
     /// Predicts regression value for a single sample given by a slice of length num_features().

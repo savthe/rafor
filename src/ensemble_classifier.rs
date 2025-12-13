@@ -1,6 +1,6 @@
 use crate::{
     classify, trainer_builders::*, decision_tree::ClassifierModel, ensemble_predictor,
-    ensemble_trainer, ClassDecode, ClassTarget, ClassesMapping, Dataset, DatasetView, TrainView,
+    ensemble_trainer, ClassDecode, ClassTarget, ClassesMapping, transposed, Trainset,
     decision_tree
 };
 use serde::{Deserialize, Serialize};
@@ -68,14 +68,14 @@ struct Trainee {
 }
 
 impl ensemble_trainer::Trainable<ClassTarget> for Trainee {
-    fn fit(&mut self, tv: TrainView<ClassTarget>, seed: u64) {
+    fn fit(&mut self, ts: Trainset<ClassTarget>, seed: u64) {
         self.conf.seed = seed;
-        self.tree = ClassifierModel::train(tv, self.num_classes, &self.conf);
+        self.tree = ClassifierModel::train(ts, self.num_classes, &self.conf);
     }
 }
 
 impl ensemble_predictor::Predictor for ClassifierModel {
-    fn predict(&self, dataset: &DatasetView) -> Vec<f32> {
+    fn predict(&self, dataset: &[f32]) -> Vec<f32> {
         self.predict(dataset)
     }
 }
@@ -84,7 +84,7 @@ impl Trainer {
     /// Trains a classifier random forest with dataset given by a slice of length divisible by
     /// targets.len().
     pub fn train(&self, data: &[f32], labels: &[i64]) -> Classifier {
-        let ds = Dataset::with_transposed(data, labels.len());
+        let dataset = transposed(data, labels.len());
 
         let (classes_map, labels_enc) = ClassesMapping::with_encode(labels);
 
@@ -93,12 +93,12 @@ impl Trainer {
             num_classes: classes_map.num_classes(),
             conf: self.train_config.clone(),
         };
+        let trainset = Trainset::new(&dataset, &labels_enc);
 
         // TODO config by ref or copy
         let ens = ensemble_trainer::fit(
             proto,
-            ds.as_view(),
-            &labels_enc,
+            &trainset,
             &self.ensemble_config,
             self.train_config.seed,
         );
@@ -126,8 +126,7 @@ impl Classifier {
     /// Predicts classes probabilities for each sample using `num_threads` threads. The length of
     /// result vector is number_of_samples * num_classes().
     pub fn proba(&self, dataset: &[f32], num_threads: usize) -> Vec<f32> {
-        let dataset = DatasetView::new(dataset, self.ensemble[0].num_features());
-        ensemble_predictor::predict(&self.ensemble, &dataset, num_threads)
+        ensemble_predictor::predict(&self.ensemble, dataset, num_threads)
     }
 
     /// Returns a number of features for a trained tree.

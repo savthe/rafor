@@ -123,9 +123,7 @@ pub mod tree_classifier;
 pub mod tree_regressor;
 use argminmax::ArgMinMax;
 use classes_mapping::{ClassDecode, ClassesMapping};
-use dataset::{Dataset, DatasetView};
 pub use decision_tree::trainer::MaxFeaturesPolicy;
-use decision_tree::TrainView;
 
 type ClassTarget = u32;
 type FloatTarget = f32;
@@ -158,6 +156,48 @@ fn classify(proba: &[f32], mapping: &ClassesMapping) -> Vec<i64> {
         .chunks(mapping.num_classes())
         .map(|c| mapping.decode(c.argmax()))
         .collect()
+}
+
+pub fn transposed(data: &[f32], num_samples: usize) -> Vec<f32> {
+    assert!(data.len() % num_samples == 0);
+    let num_features = data.len() / num_samples;
+
+    let mut res: Vec<f32> = Vec::with_capacity(data.len());
+    for feature in 0..num_features {
+        res.extend(data.iter().skip(feature).step_by(num_features));
+    }
+
+    res 
+}
+
+#[derive(Clone, PartialEq, Debug)]
+struct Trainset<'a, T> {
+    pub data: &'a [f32],
+    pub targets: &'a [T],
+    pub weights: Vec<SampleWeight>,
+}
+
+impl<'a, T> Trainset<'a, T> {
+    pub fn new(data: &'a [f32], targets: &'a [T]) -> Self {
+        Self {
+            data,
+            targets,
+            weights: vec![1.0; targets.len()],
+        }
+    }
+
+    pub fn scale_weights(&mut self, scalars: &[SampleWeight]) {
+        assert!(scalars.is_empty() || scalars.len() == self.weights.len());
+
+        self.weights
+            .iter_mut()
+            .zip(scalars)
+            .for_each(|(w, s)| *w *= s);
+    }
+
+    pub fn size(&self) -> usize {
+        self.targets.len()
+    }
 }
 
 #[cfg(test)]

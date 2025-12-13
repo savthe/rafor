@@ -1,10 +1,7 @@
 use super::decision_tree::{DecisionTree, NodeHandle};
 use super::splitter::Splitter;
-use super::TrainView;
 use crate::SampleWeight;
-use crate::{
-    DatasetView, IndexRange,
-};
+use crate::{IndexRange, Trainset};
 use radsort;
 use rand::{rngs::SmallRng, seq::SliceRandom, SeedableRng};
 
@@ -59,9 +56,11 @@ struct FeaturePermutation {
 }
 
 pub struct TrainSpace<'a, T> {
-    dataview: DatasetView<'a>,
+    data: &'a [f32],
     samples: Vec<u32>,
     targets: Vec<(T, SampleWeight)>,
+    num_features: usize,
+    dataset_size: usize
 }
 
 struct Trainer<'a, Target, S, Aggr>
@@ -103,12 +102,12 @@ impl FeaturePermutation {
 }
 
 pub fn train<Target: Copy>(
-    tv: TrainView<Target>,
+    ts: Trainset<Target>,
     conf: Config,
     splitter: impl Splitter<Target>,
     aggregator: &mut impl Aggregator<Target>,
 ) -> DecisionTree {
-    let space = TrainSpace::new(tv);
+    let space = TrainSpace::new(ts);
     let num_features = space.num_features();
 
     let max_features = match conf.max_features {
@@ -209,7 +208,25 @@ where
 }
 
 impl<'a, T: Copy> TrainSpace<'a, T> {
-    pub fn new(ts: TrainView<'a, T>) -> TrainSpace<'a, T> {
+    /*
+    pub fn new2(dataview: DatasetView<'a>, targets: &[T]) -> TrainSpace<'a, T> {
+        assert!(dataview.size() == targets.len());
+        TrainSpace {
+            dataview,
+            samples: Vec::new(),
+            targets: targets.iter().map(|&t| (t, 1.0)).collect(),
+        }
+    }
+
+    pub fn scale_weights(&mut self, scalars: &[SampleWeight]) {
+        assert!(scalars.is_empty() || scalars.len() == self.targets.len());
+        for ((_, w), &s) in self.targets.iter_mut().zip(scalars.iter()) {
+            *w *= s;
+        }
+    }
+    */
+
+    pub fn new(ts: Trainset<'a, T>) -> TrainSpace<'a, T> {
         let amount = ts.weights.iter().filter(|&x| *x > 0.).count();
         let mut samples: Vec<u32> = Vec::with_capacity(amount);
         let mut weighted_targets: Vec<(T, SampleWeight)> = Vec::with_capacity(amount);
@@ -222,15 +239,17 @@ impl<'a, T: Copy> TrainSpace<'a, T> {
         }
 
         TrainSpace {
-            dataview: ts.dataview,
+            data: ts.data,
             samples,
             targets: weighted_targets,
+            num_features: ts.data.len() / ts.targets.len(),
+            dataset_size: ts.targets.len()
         }
     }
 
     #[inline(always)]
     pub fn num_features(&self) -> usize {
-        self.dataview.num_features()
+        self.num_features
     }
 
     #[inline(always)]
@@ -259,7 +278,8 @@ impl<'a, T: Copy> TrainSpace<'a, T> {
 
     #[inline(always)]
     fn feature_val(&self, id: u32, feature: usize) -> f32 {
-        self.dataview.feature_val(id as usize, feature)
+        //self.dataview.feature_val(id as usize, feature)
+        self.data[self.dataset_size * feature + id as usize]
     }
 
     #[inline(always)]

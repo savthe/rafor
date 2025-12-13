@@ -1,6 +1,6 @@
 use crate::{
     trainer_builders::*, decision_tree::RegressorModel, ensemble_predictor,
-    ensemble_trainer, Dataset, DatasetView, FloatTarget, TrainView,
+    ensemble_trainer, transposed, FloatTarget, Trainset,
     decision_tree
 };
 use crate::MaxFeaturesPolicy;
@@ -75,14 +75,14 @@ impl Trainee {
 }
 
 impl ensemble_trainer::Trainable<FloatTarget> for Trainee {
-    fn fit(&mut self, tv: TrainView<FloatTarget>, seed: u64) {
+    fn fit(&mut self, ts: Trainset<FloatTarget>, seed: u64) {
         self.train_config.seed = seed;
-        self.tree = RegressorModel::train(tv, &self.train_config);
+        self.tree = RegressorModel::train(ts, &self.train_config);
     }
 }
 
 impl ensemble_predictor::Predictor for RegressorModel {
-    fn predict(&self, dataset: &DatasetView) -> Vec<f32> {
+    fn predict(&self, dataset: &[f32]) -> Vec<f32> {
         self.predict(dataset)
     }
 }
@@ -91,12 +91,12 @@ impl Trainer {
     /// Trains a random forest regressor with dataset given by a slice of length divisible by
     /// targets.len().
     pub fn train(&self, data: &[f32], targets: &[FloatTarget]) -> Regressor {
-        let ds = Dataset::with_transposed(data, targets.len());
+        let dataset = transposed(data, targets.len());
+        let trainset = Trainset::new(&dataset, targets);
         let trainee = Trainee::new(self.train_config.clone());
         let ens = ensemble_trainer::fit(
             trainee,
-            ds.as_view(),
-            targets,
+            &trainset,
             &self.ensemble_config,
             self.train_config.seed,
         );
@@ -109,14 +109,12 @@ impl Trainer {
 impl Regressor {
     /// Predicts regression values for a set of samples using `num_threads` threads.
     pub fn predict(&self, dataset: &[f32], num_threads: usize) -> Vec<FloatTarget> {
-        let view = DatasetView::new(dataset, self.ensemble[0].num_features());
-        ensemble_predictor::predict(&self.ensemble, &view, num_threads)
+        ensemble_predictor::predict(&self.ensemble, dataset, num_threads)
     }
 
     /// Predicts regression value for a single sample given by a slice of length num_features().
     pub fn predict_one(&self, sample: &[f32]) -> FloatTarget {
-        let view = DatasetView::new(sample, self.ensemble[0].num_features());
-        ensemble_predictor::predict(&self.ensemble, &view, 1)[0]
+        ensemble_predictor::predict(&self.ensemble, sample, 1)[0]
     }
 
     /// Provides trainer for training a random forest regressor.
