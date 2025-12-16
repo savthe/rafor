@@ -1,7 +1,7 @@
 use crate::MaxFeaturesPolicy;
 use crate::{
     classify, decision_tree, decision_tree::ClassifierModel, ensemble_predictor, ensemble_trainer,
-    trainer_builders::*, transposed, ClassDecode, ClassTarget, ClassesMapping, Trainset,
+    trainer_builders::*, ClassDecode, ClassTarget, ClassesMapping, Trainset,
 };
 use ensemble_trainer::EnsembleConfig;
 use serde::{Deserialize, Serialize};
@@ -55,7 +55,7 @@ struct Trainee {
 }
 
 impl ensemble_trainer::Trainable<ClassTarget> for Trainee {
-    fn fit(&mut self, ts: Trainset<ClassTarget>, config: decision_tree::TrainConfig) {
+    fn fit(&mut self, ts: &Trainset<ClassTarget>, config: decision_tree::TrainConfig) {
         self.tree = ClassifierModel::train(ts, self.num_classes, &config);
     }
 }
@@ -70,15 +70,13 @@ impl Trainer {
     /// Trains a classifier random forest with dataset given by a slice of length divisible by
     /// targets.len().
     pub fn train(&self, data: &[f32], labels: &[i64]) -> Classifier {
-        let dataset = transposed(data, labels.len());
-
         let (classes_map, labels_enc) = ClassesMapping::with_encode(labels);
 
         let proto = Trainee {
             tree: ClassifierModel::default(),
             num_classes: classes_map.num_classes(),
         };
-        let trainset = Trainset::new(&dataset, &labels_enc);
+        let trainset = Trainset::with_transposed(data, &labels_enc);
 
         // TODO config by ref or copy
         let ens = ensemble_trainer::fit(proto, &trainset, &self.config);

@@ -1,6 +1,6 @@
 use crate::{
     decision_tree, decision_tree::RegressorModel, ensemble_predictor, ensemble_trainer,
-    trainer_builders::*, transposed, FloatTarget, Trainset,
+    trainer_builders::*, FloatTarget, Trainset,
 };
 use ensemble_trainer::EnsembleConfig;
 use serde::{Deserialize, Serialize};
@@ -52,7 +52,7 @@ struct Trainee {
 }
 
 impl ensemble_trainer::Trainable<FloatTarget> for Trainee {
-    fn fit(&mut self, ts: Trainset<FloatTarget>, config: decision_tree::TrainConfig) {
+    fn fit(&mut self, ts: &Trainset<FloatTarget>, config: decision_tree::TrainConfig) {
         self.tree = RegressorModel::train(ts, &config);
     }
 }
@@ -67,8 +67,7 @@ impl Trainer {
     /// Trains a random forest regressor with dataset given by a slice of length divisible by
     /// targets.len().
     pub fn train(&self, data: &[f32], targets: &[FloatTarget]) -> Regressor {
-        let dataset = transposed(data, targets.len());
-        let trainset = Trainset::new(&dataset, targets);
+        let trainset = Trainset::with_transposed(data, targets);
         let trainee = Trainee::default();
         let ens = ensemble_trainer::fit(trainee, &trainset, &self.config);
 

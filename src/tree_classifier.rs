@@ -1,7 +1,5 @@
 use super::{decision_tree::ClassifierModel, Trainset};
-use crate::{
-    classify, decision_tree, trainer_builders::*, transposed, ClassDecode, ClassesMapping,
-};
+use crate::{classify, decision_tree, trainer_builders::*, ClassDecode, ClassesMapping};
 use argminmax::ArgMinMax;
 use serde::{Deserialize, Serialize};
 
@@ -50,11 +48,10 @@ impl CommonTrainerBuilder for Trainer {}
 impl Trainer {
     /// Trains a classifier tree with dataset given by a slice of length divisible by targets.len().
     pub fn train(&self, data: &[f32], labels: &[i64]) -> Classifier {
-        let dataset = transposed(data, labels.len());
         let (classes_map, encoded_labels) = ClassesMapping::with_encode(labels);
-        let ts = Trainset::new(&dataset, &encoded_labels);
+        let ts = Trainset::with_transposed(data, &encoded_labels);
         Classifier {
-            classifier: ClassifierModel::train(ts, classes_map.num_classes(), &self.config),
+            classifier: ClassifierModel::train(&ts, classes_map.num_classes(), &self.config),
             classes_map,
         }
     }

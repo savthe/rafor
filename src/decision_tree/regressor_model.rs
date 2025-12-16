@@ -35,10 +35,10 @@ impl RegressorModel {
         f32::from_bits(self.tree.predict(sample))
     }
 
-    pub fn train(tv: Trainset<FloatTarget>, config: &TrainConfig) -> RegressorModel {
+    pub fn train(ts: &Trainset<FloatTarget>, config: &TrainConfig) -> RegressorModel {
         let mut aggregator = Aggregator::default();
         let tree = trainer::train(
-            tv,
+            ts,
             config.clone(),
             MseSplitter::new(config.min_samples_leaf),
             &mut aggregator,

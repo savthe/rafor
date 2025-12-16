@@ -1,7 +1,6 @@
 use super::{decision_tree::RegressorModel, Trainset};
 use crate::decision_tree;
 use crate::trainer_builders::*;
-use crate::transposed;
 use crate::FloatTarget;
 
 use serde::{Deserialize, Serialize};
@@ -49,11 +48,10 @@ impl CommonTrainerBuilder for Trainer {}
 impl Trainer {
     /// Trains a regression tree with dataset given by a slice of length divisible by targets.len().
     pub fn train(&self, data: &[f32], targets: &[FloatTarget]) -> Regressor {
-        let dataset = transposed(data, targets.len());
-        let trainset = Trainset::new(&dataset, &targets);
+        let trainset = Trainset::with_transposed(data, &targets);
 
         Regressor {
-            regressor: RegressorModel::train(trainset, &self.config),
+            regressor: RegressorModel::train(&trainset, &self.config),
         }
     }
 }

@@ -46,7 +46,7 @@ impl ClassifierModel {
         &self.proba[i..i + self.num_classes]
     }
 
-    pub fn train(ts: Trainset<ClassTarget>, num_cls: usize, cfg: &TrainConfig) -> ClassifierModel {
+    pub fn train(ts: &Trainset<ClassTarget>, num_cls: usize, cfg: &TrainConfig) -> ClassifierModel {
         let mut probability_aggr = ProbabilityAggregator::new(num_cls);
         let tree = trainer::train(
             ts,

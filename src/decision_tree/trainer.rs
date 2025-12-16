@@ -130,7 +130,7 @@ impl FeaturePermutation {
 }
 
 pub fn train<Target: Copy>(
-    ts: Trainset<Target>,
+    ts: &Trainset<Target>,
     config: TrainConfig,
     splitter: impl Splitter<Target>,
     aggregator: &mut impl Aggregator<Target>,
@@ -236,7 +236,7 @@ where
 }
 
 impl<'a, T: Copy> TrainSpace<'a, T> {
-    pub fn new(ts: Trainset<'a, T>, weights: &[SampleWeight]) -> TrainSpace<'a, T> {
+    pub fn new(ts: &'a Trainset<'a, T>, weights: &[SampleWeight]) -> TrainSpace<'a, T> {
         let mut samples: Vec<u32> = Vec::new();
         let mut weighted_targets: Vec<(T, SampleWeight)> = Vec::new();
 
@@ -253,7 +253,7 @@ impl<'a, T: Copy> TrainSpace<'a, T> {
         }
 
         TrainSpace {
-            data: ts.data,
+            data: &ts.data,
             samples,
             targets: weighted_targets,
             num_features: ts.data.len() / ts.targets.len(),

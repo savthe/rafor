@@ -42,7 +42,7 @@ impl TrainConfigProvider for EnsembleConfig {
 impl CommonTrainerBuilder for EnsembleConfig {}
 
 pub trait Trainable<T: Copy> {
-    fn fit(&mut self, ts: Trainset<T>, config: decision_tree::TrainConfig);
+    fn fit(&mut self, ts: &Trainset<T>, config: decision_tree::TrainConfig);
 }
 
 pub fn fit<Target, Trainee>(
@@ -73,13 +73,11 @@ where
                     if id < num_trees {
                         let mut rng = SmallRng::seed_from_u64(seeds[id]);
                         let scalars = bootstrap(trainset.size(), &mut rng);
-                        // FIXME ts clone not needed
-                        let ts = trainset.clone();
                         let mut trainee = proto.clone();
                         let mut train_config = config.tree_config_proto.clone();
                         train_config.scale_weights(&scalars);
                         train_config.seed = rng.random();
-                        trainee.fit(ts, train_config);
+                        trainee.fit(trainset, train_config);
                         trainees.push(trainee);
                     }
                 }
