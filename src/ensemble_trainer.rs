@@ -73,10 +73,11 @@ where
                     if id < num_trees {
                         let mut rng = SmallRng::seed_from_u64(seeds[id]);
                         let scalars = bootstrap(trainset.size(), &mut rng);
-                        let mut ts = trainset.clone();
-                        ts.scale_weights(&scalars);
+                        // FIXME ts clone not needed
+                        let ts = trainset.clone();
                         let mut trainee = proto.clone();
                         let mut train_config = config.tree_config_proto.clone();
+                        train_config.scale_weights(&scalars);
                         train_config.seed = rng.random();
                         trainee.fit(ts, train_config);
                         trainees.push(trainee);

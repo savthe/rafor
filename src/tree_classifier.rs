@@ -33,7 +33,7 @@ pub struct Classifier {
 }
 
 /// A trainer for tree classifier.
-#[derive(Clone, PartialEq, Eq, Debug, Default)]
+#[derive(Clone, PartialEq, Debug, Default)]
 pub struct Trainer {
     config: decision_tree::TrainConfig,
 }

@@ -173,7 +173,7 @@ pub fn transposed(data: &[f32], num_samples: usize) -> Vec<f32> {
 struct Trainset<'a, T> {
     pub data: &'a [f32],
     pub targets: &'a [T],
-    pub weights: Vec<SampleWeight>,
+    //    pub weights: Vec<SampleWeight>,
 }
 
 impl<'a, T> Trainset<'a, T> {
@@ -181,19 +181,19 @@ impl<'a, T> Trainset<'a, T> {
         Self {
             data,
             targets,
-            weights: vec![1.0; targets.len()],
+            //           weights: vec![1.0; targets.len()],
         }
     }
 
-    pub fn scale_weights(&mut self, scalars: &[SampleWeight]) {
-        assert!(scalars.is_empty() || scalars.len() == self.weights.len());
-
-        self.weights
-            .iter_mut()
-            .zip(scalars)
-            .for_each(|(w, s)| *w *= s);
-    }
-
+    // pub fn scale_weights(&mut self, scalars: &[SampleWeight]) {
+    //     assert!(scalars.is_empty() || scalars.len() == self.weights.len());
+    //
+    //     self.weights
+    //         .iter_mut()
+    //         .zip(scalars)
+    //         .for_each(|(w, s)| *w *= s);
+    // }
+    //
     pub fn size(&self) -> usize {
         self.targets.len()
     }

@@ -25,7 +25,7 @@ pub enum MaxFeaturesPolicy {
 }
 
 /// Configuration for training a decision tree.
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct TrainConfig {
     /// Max depth of a tree.
     pub max_depth: usize,
@@ -48,6 +48,8 @@ pub struct TrainConfig {
 
     /// Forces leaves to have at least min_samples_leaf samples.
     pub min_samples_leaf: usize,
+
+    pub weights: Vec<SampleWeight>,
 }
 
 impl Default for TrainConfig {
@@ -58,6 +60,20 @@ impl Default for TrainConfig {
             seed: 42,
             min_samples_leaf: 1,
             min_samples_split: 2,
+            weights: Vec::new(),
+        }
+    }
+}
+
+impl TrainConfig {
+    pub fn scale_weights(&mut self, scalars: &[SampleWeight]) {
+        if self.weights.is_empty() {
+            self.weights = scalars.to_vec();
+        } else {
+            assert!(self.weights.len() == scalars.len());
+            for (w, &s) in self.weights.iter_mut().zip(scalars.iter()) {
+                *w *= s;
+            }
         }
     }
 }
@@ -119,7 +135,7 @@ pub fn train<Target: Copy>(
     splitter: impl Splitter<Target>,
     aggregator: &mut impl Aggregator<Target>,
 ) -> DecisionTree {
-    let space = TrainSpace::new(ts);
+    let space = TrainSpace::new(ts, &config.weights);
     let num_features = space.num_features();
 
     let max_features = match config.max_features {
@@ -220,33 +236,19 @@ where
 }
 
 impl<'a, T: Copy> TrainSpace<'a, T> {
-    /*
-    pub fn new2(dataview: DatasetView<'a>, targets: &[T]) -> TrainSpace<'a, T> {
-        assert!(dataview.size() == targets.len());
-        TrainSpace {
-            dataview,
-            samples: Vec::new(),
-            targets: targets.iter().map(|&t| (t, 1.0)).collect(),
-        }
-    }
+    pub fn new(ts: Trainset<'a, T>, weights: &[SampleWeight]) -> TrainSpace<'a, T> {
+        let mut samples: Vec<u32> = Vec::new();
+        let mut weighted_targets: Vec<(T, SampleWeight)> = Vec::new();
 
-    pub fn scale_weights(&mut self, scalars: &[SampleWeight]) {
-        assert!(scalars.is_empty() || scalars.len() == self.targets.len());
-        for ((_, w), &s) in self.targets.iter_mut().zip(scalars.iter()) {
-            *w *= s;
-        }
-    }
-    */
-
-    pub fn new(ts: Trainset<'a, T>) -> TrainSpace<'a, T> {
-        let amount = ts.weights.iter().filter(|&x| *x > 0.).count();
-        let mut samples: Vec<u32> = Vec::with_capacity(amount);
-        let mut weighted_targets: Vec<(T, SampleWeight)> = Vec::with_capacity(amount);
-
-        for (i, (&t, &w)) in ts.targets.iter().zip(ts.weights.iter()).enumerate() {
-            if w > 0. {
-                samples.push(i as u32);
-                weighted_targets.push((t, w));
+        if weights.is_empty() {
+            samples = (0..ts.targets.len()).map(|x| x as u32).collect();
+            weighted_targets = ts.targets.iter().map(|&t| (t, 1.0)).collect();
+        } else {
+            for (i, (&t, &w)) in ts.targets.iter().zip(weights.iter()).enumerate() {
+                if w > 0. {
+                    samples.push(i as u32);
+                    weighted_targets.push((t, w));
+                }
             }
         }
 

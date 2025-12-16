@@ -32,7 +32,7 @@ pub struct Regressor {
 }
 
 /// Trainer for tree regressor.
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub struct Trainer {
     pub config: decision_tree::TrainConfig,
 }
