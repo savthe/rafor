@@ -1,12 +1,7 @@
 use super::{decision_tree::ClassifierModel, Trainset};
 use crate::{
-    classify,
-    trainer_builders::*,
-    ClassDecode, ClassesMapping,
-    decision_tree,
-    transposed
+    classify, decision_tree, trainer_builders::*, transposed, ClassDecode, ClassesMapping,
 };
-use crate::MaxFeaturesPolicy;
 use argminmax::ArgMinMax;
 use serde::{Deserialize, Serialize};
 
@@ -38,27 +33,13 @@ pub struct Classifier {
 }
 
 /// A trainer for tree classifier.
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug, Default)]
 pub struct Trainer {
-    config: decision_tree::trainer::Config
-}
-
-impl Default for Trainer {
-    fn default() -> Self {
-        Self {
-            config: decision_tree::trainer::Config {
-                max_depth: usize::MAX,
-                max_features: MaxFeaturesPolicy::NUMBER(usize::MAX),
-                seed: 42,
-                min_samples_leaf: 1,
-                min_samples_split: 2,
-            },
-        }
-    }
+    config: decision_tree::TrainConfig,
 }
 
 impl TrainConfigProvider for Trainer {
-    fn train_config(&mut self) -> &mut decision_tree::trainer::Config {
+    fn train_config(&mut self) -> &mut decision_tree::TrainConfig {
         &mut self.config
     }
 }
@@ -113,4 +94,3 @@ impl ClassDecode for Classifier {
         self.classes_map.get_decode_table()
     }
 }
-

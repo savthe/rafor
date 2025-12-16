@@ -112,7 +112,6 @@
 //! (`f32` for regression trees, `u32` index pointing to the class probabilities for classification
 //! trees) is bit-packed into parent's `u32` child node index.
 mod classes_mapping;
-mod dataset;
 mod decision_tree;
 pub mod ensemble_classifier;
 mod ensemble_predictor;
@@ -123,7 +122,7 @@ pub mod tree_classifier;
 pub mod tree_regressor;
 use argminmax::ArgMinMax;
 use classes_mapping::{ClassDecode, ClassesMapping};
-pub use decision_tree::trainer::MaxFeaturesPolicy;
+pub use decision_tree::MaxFeaturesPolicy;
 
 type ClassTarget = u32;
 type FloatTarget = f32;
@@ -167,7 +166,7 @@ pub fn transposed(data: &[f32], num_samples: usize) -> Vec<f32> {
         res.extend(data.iter().skip(feature).step_by(num_features));
     }
 
-    res 
+    res
 }
 
 #[derive(Clone, PartialEq, Debug)]

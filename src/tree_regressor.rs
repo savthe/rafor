@@ -1,9 +1,8 @@
 use super::{decision_tree::RegressorModel, Trainset};
-use crate::trainer_builders::*;
-use crate::{FloatTarget};
 use crate::decision_tree;
-use crate::MaxFeaturesPolicy;
+use crate::trainer_builders::*;
 use crate::transposed;
+use crate::FloatTarget;
 
 use serde::{Deserialize, Serialize};
 
@@ -33,27 +32,13 @@ pub struct Regressor {
 }
 
 /// Trainer for tree regressor.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct Trainer {
-    pub config: decision_tree::trainer::Config,
-}
-
-impl Default for Trainer {
-    fn default() -> Self {
-        Self {
-            config: decision_tree::trainer::Config {
-                max_depth: usize::MAX,
-                max_features: MaxFeaturesPolicy::NUMBER(usize::MAX),
-                seed: 42,
-                min_samples_leaf: 1,
-                min_samples_split: 2,
-            },
-        }
-    }
+    pub config: decision_tree::TrainConfig,
 }
 
 impl TrainConfigProvider for Trainer {
-    fn train_config(&mut self) -> &mut decision_tree::trainer::Config {
+    fn train_config(&mut self) -> &mut decision_tree::TrainConfig {
         &mut self.config
     }
 }

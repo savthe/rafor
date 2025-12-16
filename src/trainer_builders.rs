@@ -1,8 +1,9 @@
-use crate::decision_tree::trainer;
+use crate::decision_tree::TrainConfig;
 use crate::ensemble_trainer;
+use crate::MaxFeaturesPolicy;
 use ensemble_trainer::EnsembleConfig;
 pub trait TrainConfigProvider: Sized {
-    fn train_config(&mut self) -> &mut trainer::Config;
+    fn train_config(&mut self) -> &mut TrainConfig;
 }
 
 pub trait CommonTrainerBuilder: TrainConfigProvider {
@@ -19,7 +20,7 @@ pub trait CommonTrainerBuilder: TrainConfigProvider {
     }
 
     /// Sets maximum features to consider in split (`max_features`).
-    fn with_max_features(&mut self, max_features: trainer::MaxFeaturesPolicy) -> &mut Self {
+    fn with_max_features(&mut self, max_features: MaxFeaturesPolicy) -> &mut Self {
         self.train_config().max_features = max_features;
         self
     }

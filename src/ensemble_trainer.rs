@@ -1,4 +1,8 @@
-use crate::{SampleWeight, Trainset};
+use crate::{
+    decision_tree,
+    trainer_builders::{CommonTrainerBuilder, TrainConfigProvider},
+    SampleWeight, Trainset,
+};
 use rand::{rngs::SmallRng, Rng, SeedableRng};
 use std::{
     sync::atomic::{AtomicUsize, Ordering},
@@ -7,8 +11,10 @@ use std::{
 };
 
 // Configuration for training the ensembles of trees.
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct EnsembleConfig {
+    pub tree_config_proto: decision_tree::TrainConfig,
+
     /// Number of decision trees in ensemble.
     pub num_trees: usize,
 
@@ -17,21 +23,39 @@ pub struct EnsembleConfig {
     pub num_threads: usize,
 }
 
+impl Default for EnsembleConfig {
+    fn default() -> Self {
+        Self {
+            tree_config_proto: decision_tree::TrainConfig::default(),
+            num_trees: 100,
+            num_threads: 1,
+        }
+    }
+}
+
+impl TrainConfigProvider for EnsembleConfig {
+    fn train_config(&mut self) -> &mut decision_tree::TrainConfig {
+        &mut self.tree_config_proto
+    }
+}
+
+impl CommonTrainerBuilder for EnsembleConfig {}
+
 pub trait Trainable<T: Copy> {
-    fn fit(&mut self, ts: Trainset<T>, seed: u64);
+    fn fit(&mut self, ts: Trainset<T>, config: decision_tree::TrainConfig);
 }
 
 pub fn fit<Target, Trainee>(
     proto: Trainee,
     trainset: &Trainset<Target>,
     config: &EnsembleConfig,
-    seed: u64,
 ) -> Vec<Trainee>
 where
     Target: Copy + Sync + Send,
     Trainee: Trainable<Target> + Clone + Send + Sync,
 {
     assert!(config.num_threads > 0);
+    let seed = config.tree_config_proto.seed;
     let mut rng = SmallRng::seed_from_u64(seed);
     let seeds: Vec<u64> = (0..config.num_trees).map(|_| rng.random()).collect();
 
@@ -52,7 +76,9 @@ where
                         let mut ts = trainset.clone();
                         ts.scale_weights(&scalars);
                         let mut trainee = proto.clone();
-                        trainee.fit(ts, rng.random());
+                        let mut train_config = config.tree_config_proto.clone();
+                        train_config.seed = rng.random();
+                        trainee.fit(ts, train_config);
                         trainees.push(trainee);
                     }
                 }

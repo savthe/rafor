@@ -3,6 +3,7 @@ use super::DecisionTree;
 use super::splitter::MseSplitter;
 
 use super::trainer;
+use super::TrainConfig;
 use crate::{FloatTarget, SampleWeight, Trainset};
 
 use serde::{Deserialize, Serialize};
@@ -34,7 +35,7 @@ impl RegressorModel {
         f32::from_bits(self.tree.predict(sample))
     }
 
-    pub fn train(tv: Trainset<FloatTarget>, config: &trainer::Config) -> RegressorModel {
+    pub fn train(tv: Trainset<FloatTarget>, config: &TrainConfig) -> RegressorModel {
         let mut aggregator = Aggregator::default();
         let tree = trainer::train(
             tv,

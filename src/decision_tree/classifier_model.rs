@@ -1,6 +1,7 @@
 use super::splitter::GiniSplitter;
 use super::trainer;
 use super::DecisionTree;
+use super::TrainConfig;
 use crate::{ClassTarget, SampleWeight, Trainset};
 
 use serde::{Deserialize, Serialize};
@@ -45,11 +46,7 @@ impl ClassifierModel {
         &self.proba[i..i + self.num_classes]
     }
 
-    pub fn train(
-        ts: Trainset<ClassTarget>,
-        num_cls: usize,
-        cfg: &trainer::Config,
-    ) -> ClassifierModel {
+    pub fn train(ts: Trainset<ClassTarget>, num_cls: usize, cfg: &TrainConfig) -> ClassifierModel {
         let mut probability_aggr = ProbabilityAggregator::new(num_cls);
         let tree = trainer::train(
             ts,
