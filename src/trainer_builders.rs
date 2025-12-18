@@ -36,6 +36,12 @@ pub trait CommonTrainerBuilder: TrainConfigProvider {
         self.train_config().min_samples_leaf = num_samples;
         self
     }
+
+    /// Sets sample weights.
+    fn with_weights(&mut self, weights: &[f32]) -> &mut Self {
+        self.train_config().weights = weights.to_vec();
+        self
+    }
 }
 
 // pub trait ClassifierConfigBuilder: TrainConfigProvider {
