@@ -56,6 +56,9 @@
 //!
 //! `num_threads: usize` defines the number of CPU threads to use for training.
 //!
+//! `sample_weights: Vec<f32>` defines the weight for each sample. If empty, each sample is weighted
+//! with 1.0
+//!
 //! # Model serialization and deserialization
 //! All models support [serde](https://docs.rs/serde/latest/serde/), so any lib that supports `serde`
 //! can be used for serialization and deserialization.
@@ -131,7 +134,6 @@ type SampleWeight = f32;
 type IndexRange = std::ops::Range<usize>;
 
 pub mod prelude {
-    // TODO pub use from lib.
     pub use crate::classes_mapping::ClassDecode;
     pub use crate::trainer_builders::{CommonTrainerBuilder, EnsembleTrainerBuilder};
     pub use crate::MaxFeaturesPolicy;
@@ -139,8 +141,8 @@ pub mod prelude {
 
 pub mod dt {
     //! Decision Tree implementation.
-    pub use super::tree_classifier::Classifier;
-    pub use super::tree_regressor::Regressor;
+    pub use crate::tree_classifier::Classifier;
+    pub use crate::tree_regressor::Regressor;
 }
 
 pub mod rf {

@@ -1,7 +1,8 @@
-use super::decision_tree::{DecisionTree, NodeHandle};
-use super::splitter::Splitter;
-use crate::SampleWeight;
-use crate::{IndexRange, Trainset};
+use super::{
+    decision_tree::{DecisionTree, NodeHandle},
+    splitter::Splitter,
+};
+use crate::{IndexRange, SampleWeight, Trainset};
 use radsort;
 use rand::{rngs::SmallRng, seq::SliceRandom, SeedableRng};
 
@@ -12,7 +13,6 @@ struct Split {
     threshold: f32,
 }
 
-// TODO check that we don't need to add one.
 /// Defines the limiting strategy for a number of features that are selected at each split.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum MaxFeaturesPolicy {

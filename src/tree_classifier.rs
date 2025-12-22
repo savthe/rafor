@@ -1,5 +1,9 @@
-use super::{decision_tree::ClassifierModel, Trainset};
-use crate::{classify, decision_tree, trainer_builders::*, ClassDecode, ClassesMapping};
+use crate::{
+    classify,
+    decision_tree::{self, ClassifierModel},
+    trainer_builders::*,
+    ClassDecode, ClassesMapping, Trainset,
+};
 use argminmax::ArgMinMax;
 use serde::{Deserialize, Serialize};
 
@@ -13,6 +17,7 @@ use serde::{Deserialize, Serialize};
 /// seed: 42,
 /// min_samples_leaf: 1,
 /// min_samples_split: 2,
+/// sample_weights: empty (1.0 for each sample)
 ///```
 ///
 /// # Examples
@@ -43,7 +48,6 @@ impl TrainConfigProvider for Trainer {
 }
 
 impl CommonTrainerBuilder for Trainer {}
-//impl ClassifierConfigBuilder for Trainer {}
 
 impl Trainer {
     /// Trains a classifier tree with dataset given by a slice of length divisible by targets.len().

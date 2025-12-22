@@ -1,7 +1,8 @@
-use super::{decision_tree::RegressorModel, Trainset};
-use crate::decision_tree;
-use crate::trainer_builders::*;
-use crate::FloatTarget;
+use crate::{
+    decision_tree::{self, RegressorModel},
+    trainer_builders::*,
+    FloatTarget, Trainset,
+};
 
 use serde::{Deserialize, Serialize};
 
@@ -14,6 +15,7 @@ use serde::{Deserialize, Serialize};
 /// seed: 42,
 /// min_samples_leaf: 1,
 /// min_samples_split: 2,
+/// sample_weights: empty (1.0 for each sample)
 ///```
 ///
 /// # Example

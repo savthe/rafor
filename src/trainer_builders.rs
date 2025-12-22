@@ -1,7 +1,5 @@
-use crate::decision_tree::TrainConfig;
-use crate::ensemble_trainer;
-use crate::MaxFeaturesPolicy;
-use ensemble_trainer::EnsembleConfig;
+use crate::{decision_tree::TrainConfig, ensemble_trainer::EnsembleConfig, MaxFeaturesPolicy};
+
 pub trait TrainConfigProvider: Sized {
     fn train_config(&mut self) -> &mut TrainConfig;
 }
@@ -43,22 +41,6 @@ pub trait CommonTrainerBuilder: TrainConfigProvider {
         self
     }
 }
-
-// pub trait ClassifierConfigBuilder: TrainConfigProvider {
-//     /// Sets metric to Gini index.
-//     fn with_gini(&mut self) -> &mut Self {
-//         self.train_config().metric = config::Metric::GINI;
-//         self
-//     }
-// }
-
-// pub trait RegressorConfigBuilder: TrainConfigProvider {
-//     /// Sets metric to MSE.
-//     fn with_mse(&mut self) -> &mut Self {
-//         self.train_config().metric = config::Metric::MSE;
-//         self
-//     }
-// }
 
 pub trait EnsembleConfigProvider: Sized {
     fn ensemble_config(&mut self) -> &mut EnsembleConfig;

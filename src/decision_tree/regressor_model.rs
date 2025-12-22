@@ -1,9 +1,5 @@
-use super::DecisionTree;
+use super::{splitter::MseSplitter, trainer, DecisionTree, TrainConfig};
 
-use super::splitter::MseSplitter;
-
-use super::trainer;
-use super::TrainConfig;
 use crate::{FloatTarget, SampleWeight, Trainset};
 
 use serde::{Deserialize, Serialize};
@@ -50,7 +46,6 @@ impl RegressorModel {
 
 impl trainer::Aggregator<FloatTarget> for Aggregator {
     fn aggregate(&mut self, leaf_items: &[(FloatTarget, SampleWeight)]) -> u32 {
-        // TODO idiomatic
         let mut s: f64 = 0.;
         let mut total_weight: f64 = 0.;
         for &(x, w) in leaf_items.iter() {

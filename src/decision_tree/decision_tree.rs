@@ -129,7 +129,7 @@ impl DecisionTree {
     }
 
     pub fn predict(&self, sample: &[f32]) -> u32 {
-        // FIXME if tree is empty?
+        assert!(!self.nodes.is_empty());
         let mut id = 0;
         let mut is_leaf = false;
 

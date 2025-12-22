@@ -1,7 +1,5 @@
-use super::splitter::GiniSplitter;
-use super::trainer;
-use super::DecisionTree;
-use super::TrainConfig;
+use super::{splitter::GiniSplitter, trainer, DecisionTree, TrainConfig};
+
 use crate::{ClassTarget, SampleWeight, Trainset};
 
 use serde::{Deserialize, Serialize};

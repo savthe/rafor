@@ -1,8 +1,10 @@
 use crate::{
-    decision_tree, decision_tree::RegressorModel, ensemble_predictor, ensemble_trainer,
-    trainer_builders::*, FloatTarget, Trainset,
+    decision_tree::{self, RegressorModel},
+    ensemble_predictor,
+    ensemble_trainer::{self, EnsembleConfig},
+    trainer_builders::*,
+    FloatTarget, Trainset,
 };
-use ensemble_trainer::EnsembleConfig;
 use serde::{Deserialize, Serialize};
 
 /// A random forest regressor.
@@ -15,6 +17,7 @@ use serde::{Deserialize, Serialize};
 /// seed: 42,
 /// min_samples_leaf: 1,
 /// min_samples_split: 2,
+/// sample_weights: empty (1.0 for each sample)
 /// num_trees: 100,
 /// num_threads: 1,
 ///```

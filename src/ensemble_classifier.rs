@@ -1,9 +1,11 @@
-use crate::MaxFeaturesPolicy;
 use crate::{
-    classify, decision_tree, decision_tree::ClassifierModel, ensemble_predictor, ensemble_trainer,
-    trainer_builders::*, ClassDecode, ClassTarget, ClassesMapping, Trainset,
+    classify, decision_tree,
+    decision_tree::ClassifierModel,
+    ensemble_predictor,
+    ensemble_trainer::{self, EnsembleConfig},
+    trainer_builders::*,
+    ClassDecode, ClassTarget, ClassesMapping, MaxFeaturesPolicy, Trainset,
 };
-use ensemble_trainer::EnsembleConfig;
 use serde::{Deserialize, Serialize};
 /// A random forest classifier.
 /// # Training
@@ -15,6 +17,7 @@ use serde::{Deserialize, Serialize};
 /// seed: 42,
 /// min_samples_leaf: 1,
 /// min_samples_split: 2,
+/// sample_weights: empty (1.0 for each sample)
 /// num_trees: 100,
 /// num_threads: 1,
 ///```
@@ -78,7 +81,6 @@ impl Trainer {
         };
         let trainset = Trainset::with_transposed(data, &labels_enc);
 
-        // TODO config by ref or copy
         let ens = ensemble_trainer::fit(proto, &trainset, &self.config);
 
         Classifier {
