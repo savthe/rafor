@@ -1,8 +1,7 @@
-use crate::decision_tree::trainer;
-use crate::ensemble_trainer;
-use ensemble_trainer::EnsembleConfig;
+use crate::{decision_tree::TrainConfig, ensemble_trainer::EnsembleConfig, MaxFeaturesPolicy};
+
 pub trait TrainConfigProvider: Sized {
-    fn train_config(&mut self) -> &mut trainer::Config;
+    fn train_config(&mut self) -> &mut TrainConfig;
 }
 
 pub trait CommonTrainerBuilder: TrainConfigProvider {
@@ -19,7 +18,7 @@ pub trait CommonTrainerBuilder: TrainConfigProvider {
     }
 
     /// Sets maximum features to consider in split (`max_features`).
-    fn with_max_features(&mut self, max_features: trainer::MaxFeaturesPolicy) -> &mut Self {
+    fn with_max_features(&mut self, max_features: MaxFeaturesPolicy) -> &mut Self {
         self.train_config().max_features = max_features;
         self
     }
@@ -35,23 +34,13 @@ pub trait CommonTrainerBuilder: TrainConfigProvider {
         self.train_config().min_samples_leaf = num_samples;
         self
     }
+
+    /// Sets sample weights.
+    fn with_weights(&mut self, weights: &[f32]) -> &mut Self {
+        self.train_config().weights = weights.to_vec();
+        self
+    }
 }
-
-// pub trait ClassifierConfigBuilder: TrainConfigProvider {
-//     /// Sets metric to Gini index.
-//     fn with_gini(&mut self) -> &mut Self {
-//         self.train_config().metric = config::Metric::GINI;
-//         self
-//     }
-// }
-
-// pub trait RegressorConfigBuilder: TrainConfigProvider {
-//     /// Sets metric to MSE.
-//     fn with_mse(&mut self) -> &mut Self {
-//         self.train_config().metric = config::Metric::MSE;
-//         self
-//     }
-// }
 
 pub trait EnsembleConfigProvider: Sized {
     fn ensemble_config(&mut self) -> &mut EnsembleConfig;

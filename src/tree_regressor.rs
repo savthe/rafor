@@ -1,8 +1,8 @@
-use super::{decision_tree::RegressorModel, TrainView};
-use crate::trainer_builders::*;
-use crate::{Dataset, DatasetView, FloatTarget};
-use crate::decision_tree;
-use crate::MaxFeaturesPolicy;
+use crate::{
+    decision_tree::{self, RegressorModel},
+    trainer_builders::*,
+    FloatTarget, Trainset,
+};
 
 use serde::{Deserialize, Serialize};
 
@@ -15,6 +15,7 @@ use serde::{Deserialize, Serialize};
 /// seed: 42,
 /// min_samples_leaf: 1,
 /// min_samples_split: 2,
+/// sample_weights: empty (1.0 for each sample)
 ///```
 ///
 /// # Example
@@ -32,27 +33,13 @@ pub struct Regressor {
 }
 
 /// Trainer for tree regressor.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub struct Trainer {
-    pub config: decision_tree::trainer::Config,
-}
-
-impl Default for Trainer {
-    fn default() -> Self {
-        Self {
-            config: decision_tree::trainer::Config {
-                max_depth: usize::MAX,
-                max_features: MaxFeaturesPolicy::NUMBER(usize::MAX),
-                seed: 42,
-                min_samples_leaf: 1,
-                min_samples_split: 2,
-            },
-        }
-    }
+    pub config: decision_tree::TrainConfig,
 }
 
 impl TrainConfigProvider for Trainer {
-    fn train_config(&mut self) -> &mut decision_tree::trainer::Config {
+    fn train_config(&mut self) -> &mut decision_tree::TrainConfig {
         &mut self.config
     }
 }
@@ -62,13 +49,11 @@ impl CommonTrainerBuilder for Trainer {}
 
 impl Trainer {
     /// Trains a regression tree with dataset given by a slice of length divisible by targets.len().
-    pub fn train(&self, raw_dataset: &[f32], targets: &[FloatTarget]) -> Regressor {
-        let dataset = Dataset::with_transposed(raw_dataset, targets.len());
-        let weights = vec![1.; targets.len()];
-        let tv = TrainView::new(dataset.as_view(), &targets, &weights);
+    pub fn train(&self, data: &[f32], targets: &[FloatTarget]) -> Regressor {
+        let trainset = Trainset::with_transposed(data, &targets);
 
         Regressor {
-            regressor: RegressorModel::train(tv, &self.config),
+            regressor: RegressorModel::train(&trainset, &self.config),
         }
     }
 }
@@ -77,8 +62,8 @@ impl Regressor {
     /// Predicts regression values for a set of samples.
     /// Dataset is a vector of floats with length multiple of num_features().
     pub fn predict(&self, dataset: &[f32]) -> Vec<FloatTarget> {
-        let view = DatasetView::new(dataset, self.regressor.num_features());
-        self.regressor.predict(&view)
+        //let view = DatasetView::new(dataset, self.regressor.num_features());
+        self.regressor.predict(dataset)
     }
 
     /// Predicts regression value for a single sample given by a slice of length num_features().

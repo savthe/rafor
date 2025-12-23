@@ -1,11 +1,9 @@
-use super::{decision_tree::ClassifierModel, TrainView};
 use crate::{
     classify,
+    decision_tree::{self, ClassifierModel},
     trainer_builders::*,
-    ClassDecode, ClassesMapping, Dataset, DatasetView,
-    decision_tree
+    ClassDecode, ClassesMapping, Trainset,
 };
-use crate::MaxFeaturesPolicy;
 use argminmax::ArgMinMax;
 use serde::{Deserialize, Serialize};
 
@@ -19,6 +17,7 @@ use serde::{Deserialize, Serialize};
 /// seed: 42,
 /// min_samples_leaf: 1,
 /// min_samples_split: 2,
+/// sample_weights: empty (1.0 for each sample)
 ///```
 ///
 /// # Examples
@@ -37,43 +36,26 @@ pub struct Classifier {
 }
 
 /// A trainer for tree classifier.
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Debug, Default)]
 pub struct Trainer {
-    config: decision_tree::trainer::Config
-}
-
-impl Default for Trainer {
-    fn default() -> Self {
-        Self {
-            config: decision_tree::trainer::Config {
-                max_depth: usize::MAX,
-                max_features: MaxFeaturesPolicy::NUMBER(usize::MAX),
-                seed: 42,
-                min_samples_leaf: 1,
-                min_samples_split: 2,
-            },
-        }
-    }
+    config: decision_tree::TrainConfig,
 }
 
 impl TrainConfigProvider for Trainer {
-    fn train_config(&mut self) -> &mut decision_tree::trainer::Config {
+    fn train_config(&mut self) -> &mut decision_tree::TrainConfig {
         &mut self.config
     }
 }
 
 impl CommonTrainerBuilder for Trainer {}
-//impl ClassifierConfigBuilder for Trainer {}
 
 impl Trainer {
     /// Trains a classifier tree with dataset given by a slice of length divisible by targets.len().
-    pub fn train(&self, raw_dataset: &[f32], labels: &[i64]) -> Classifier {
-        let dataset = Dataset::with_transposed(raw_dataset, labels.len());
+    pub fn train(&self, data: &[f32], labels: &[i64]) -> Classifier {
         let (classes_map, encoded_labels) = ClassesMapping::with_encode(labels);
-        let weights = vec![1.; labels.len()];
-        let tv = TrainView::new(dataset.as_view(), &encoded_labels, &weights);
+        let ts = Trainset::with_transposed(data, &encoded_labels);
         Classifier {
-            classifier: ClassifierModel::train(tv, classes_map.num_classes(), &self.config),
+            classifier: ClassifierModel::train(&ts, classes_map.num_classes(), &self.config),
             classes_map,
         }
     }
@@ -94,8 +76,7 @@ impl Classifier {
     /// Predicts classes probabilities for each sample. The length of result vector is
     /// number_of_samples * num_classes().
     pub fn proba(&self, dataset: &[f32]) -> Vec<f32> {
-        let view = DatasetView::new(dataset, self.classifier.num_features());
-        self.classifier.predict(&view)
+        self.classifier.predict(dataset)
     }
 
     /// Provides trainer for training a classifier tree.
@@ -114,4 +95,3 @@ impl ClassDecode for Classifier {
         self.classes_map.get_decode_table()
     }
 }
-

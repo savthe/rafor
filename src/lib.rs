@@ -56,6 +56,9 @@
 //!
 //! `num_threads: usize` defines the number of CPU threads to use for training.
 //!
+//! `sample_weights: Vec<f32>` defines the weight for each sample. If empty, each sample is weighted
+//! with 1.0
+//!
 //! # Model serialization and deserialization
 //! All models support [serde](https://docs.rs/serde/latest/serde/), so any lib that supports `serde`
 //! can be used for serialization and deserialization.
@@ -112,7 +115,6 @@
 //! (`f32` for regression trees, `u32` index pointing to the class probabilities for classification
 //! trees) is bit-packed into parent's `u32` child node index.
 mod classes_mapping;
-mod dataset;
 mod decision_tree;
 pub mod ensemble_classifier;
 mod ensemble_predictor;
@@ -123,9 +125,7 @@ pub mod tree_classifier;
 pub mod tree_regressor;
 use argminmax::ArgMinMax;
 use classes_mapping::{ClassDecode, ClassesMapping};
-use dataset::{Dataset, DatasetView};
-pub use decision_tree::trainer::MaxFeaturesPolicy;
-use decision_tree::TrainView;
+pub use decision_tree::MaxFeaturesPolicy;
 
 type ClassTarget = u32;
 type FloatTarget = f32;
@@ -134,7 +134,6 @@ type SampleWeight = f32;
 type IndexRange = std::ops::Range<usize>;
 
 pub mod prelude {
-    // TODO pub use from lib.
     pub use crate::classes_mapping::ClassDecode;
     pub use crate::trainer_builders::{CommonTrainerBuilder, EnsembleTrainerBuilder};
     pub use crate::MaxFeaturesPolicy;
@@ -142,8 +141,8 @@ pub mod prelude {
 
 pub mod dt {
     //! Decision Tree implementation.
-    pub use super::tree_classifier::Classifier;
-    pub use super::tree_regressor::Regressor;
+    pub use crate::tree_classifier::Classifier;
+    pub use crate::tree_regressor::Regressor;
 }
 
 pub mod rf {
@@ -158,6 +157,30 @@ fn classify(proba: &[f32], mapping: &ClassesMapping) -> Vec<i64> {
         .chunks(mapping.num_classes())
         .map(|c| mapping.decode(c.argmax()))
         .collect()
+}
+
+#[derive(Clone, PartialEq, Debug)]
+struct Trainset<'a, T> {
+    pub data: Vec<f32>,
+    pub targets: &'a [T],
+}
+
+impl<'a, T> Trainset<'a, T> {
+    pub fn with_transposed(data: &[f32], targets: &'a [T]) -> Self {
+        assert!(data.len() % targets.len() == 0);
+        let num_features = data.len() / targets.len();
+
+        let mut res: Vec<f32> = Vec::with_capacity(data.len());
+        for feature in 0..num_features {
+            res.extend(data.iter().skip(feature).step_by(num_features));
+        }
+
+        Self { data: res, targets }
+    }
+
+    pub fn size(&self) -> usize {
+        self.targets.len()
+    }
 }
 
 #[cfg(test)]

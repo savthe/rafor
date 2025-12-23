@@ -1,11 +1,12 @@
 use crate::{
-    classify, trainer_builders::*, decision_tree::ClassifierModel, ensemble_predictor,
-    ensemble_trainer, ClassDecode, ClassTarget, ClassesMapping, Dataset, DatasetView, TrainView,
-    decision_tree
+    classify, decision_tree,
+    decision_tree::ClassifierModel,
+    ensemble_predictor,
+    ensemble_trainer::{self, EnsembleConfig},
+    trainer_builders::*,
+    ClassDecode, ClassTarget, ClassesMapping, MaxFeaturesPolicy, Trainset,
 };
 use serde::{Deserialize, Serialize};
-use crate::MaxFeaturesPolicy;
-use ensemble_trainer::EnsembleConfig;
 /// A random forest classifier.
 /// # Training
 /// The [Trainer] implements [CommonTrainerBuilder] and [EnsembleTrainerBuilder]. Default training
@@ -16,6 +17,7 @@ use ensemble_trainer::EnsembleConfig;
 /// seed: 42,
 /// min_samples_leaf: 1,
 /// min_samples_split: 2,
+/// sample_weights: empty (1.0 for each sample)
 /// num_trees: 100,
 /// num_threads: 1,
 ///```
@@ -36,27 +38,16 @@ pub struct Classifier {
 }
 
 /// Trainer for ensemble classifier.
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct Trainer {
-    pub train_config: decision_tree::trainer::Config,
-    pub ensemble_config: EnsembleConfig,
+    pub config: EnsembleConfig,
 }
 
 impl Default for Trainer {
     fn default() -> Self {
-        Self {
-            train_config: decision_tree::trainer::Config {
-                max_depth: usize::MAX,
-                max_features: MaxFeaturesPolicy::SQRT,
-                seed: 42,
-                min_samples_leaf: 1,
-                min_samples_split: 2,
-            },
-            ensemble_config: EnsembleConfig {
-                num_trees: 100,
-                num_threads: 1,
-            },
-        }
+        let mut config = EnsembleConfig::default();
+        config.tree_config_proto.max_features = MaxFeaturesPolicy::SQRT;
+        Self { config }
     }
 }
 
@@ -64,18 +55,16 @@ impl Default for Trainer {
 struct Trainee {
     tree: ClassifierModel,
     num_classes: usize,
-    conf: decision_tree::trainer::Config,
 }
 
 impl ensemble_trainer::Trainable<ClassTarget> for Trainee {
-    fn fit(&mut self, tv: TrainView<ClassTarget>, seed: u64) {
-        self.conf.seed = seed;
-        self.tree = ClassifierModel::train(tv, self.num_classes, &self.conf);
+    fn fit(&mut self, ts: &Trainset<ClassTarget>, config: decision_tree::TrainConfig) {
+        self.tree = ClassifierModel::train(ts, self.num_classes, &config);
     }
 }
 
 impl ensemble_predictor::Predictor for ClassifierModel {
-    fn predict(&self, dataset: &DatasetView) -> Vec<f32> {
+    fn predict(&self, dataset: &[f32]) -> Vec<f32> {
         self.predict(dataset)
     }
 }
@@ -84,31 +73,21 @@ impl Trainer {
     /// Trains a classifier random forest with dataset given by a slice of length divisible by
     /// targets.len().
     pub fn train(&self, data: &[f32], labels: &[i64]) -> Classifier {
-        let ds = Dataset::with_transposed(data, labels.len());
-
         let (classes_map, labels_enc) = ClassesMapping::with_encode(labels);
 
         let proto = Trainee {
             tree: ClassifierModel::default(),
             num_classes: classes_map.num_classes(),
-            conf: self.train_config.clone(),
         };
+        let trainset = Trainset::with_transposed(data, &labels_enc);
 
-        // TODO config by ref or copy
-        let ens = ensemble_trainer::fit(
-            proto,
-            ds.as_view(),
-            &labels_enc,
-            &self.ensemble_config,
-            self.train_config.seed,
-        );
+        let ens = ensemble_trainer::fit(proto, &trainset, &self.config);
 
         Classifier {
             ensemble: ens.into_iter().map(|t| t.tree).collect(),
             classes_map,
         }
     }
-
 }
 
 impl Classifier {
@@ -126,8 +105,7 @@ impl Classifier {
     /// Predicts classes probabilities for each sample using `num_threads` threads. The length of
     /// result vector is number_of_samples * num_classes().
     pub fn proba(&self, dataset: &[f32], num_threads: usize) -> Vec<f32> {
-        let dataset = DatasetView::new(dataset, self.ensemble[0].num_features());
-        ensemble_predictor::predict(&self.ensemble, &dataset, num_threads)
+        ensemble_predictor::predict(&self.ensemble, dataset, num_threads)
     }
 
     /// Returns a number of features for a trained tree.
@@ -148,14 +126,14 @@ impl ClassDecode for Classifier {
 }
 
 impl TrainConfigProvider for Trainer {
-    fn train_config(&mut self) -> &mut decision_tree::trainer::Config {
-        &mut self.train_config
+    fn train_config(&mut self) -> &mut decision_tree::TrainConfig {
+        &mut self.config.tree_config_proto
     }
 }
 
 impl EnsembleConfigProvider for Trainer {
     fn ensemble_config(&mut self) -> &mut EnsembleConfig {
-        &mut self.ensemble_config
+        &mut self.config
     }
 }
 

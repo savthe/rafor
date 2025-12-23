@@ -1,8 +1,5 @@
-use crate::dt;
-use crate::prelude::*;
-use crate::rf;
-use std::fs::read_to_string;
-use std::str::FromStr;
+use crate::{dt, prelude::*, rf};
+use std::{fs::read_to_string, str::FromStr};
 
 const MAX_THREADS: usize = 8;
 

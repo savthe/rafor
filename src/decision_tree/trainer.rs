@@ -1,10 +1,8 @@
-use super::decision_tree::{DecisionTree, NodeHandle};
-use super::splitter::Splitter;
-use super::TrainView;
-use crate::SampleWeight;
-use crate::{
-    DatasetView, IndexRange,
+use super::{
+    decision_tree::{DecisionTree, NodeHandle},
+    splitter::Splitter,
 };
+use crate::{IndexRange, SampleWeight, Trainset};
 use radsort;
 use rand::{rngs::SmallRng, seq::SliceRandom, SeedableRng};
 
@@ -15,7 +13,6 @@ struct Split {
     threshold: f32,
 }
 
-// TODO check that we don't need to add one.
 /// Defines the limiting strategy for a number of features that are selected at each split.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum MaxFeaturesPolicy {
@@ -28,8 +25,8 @@ pub enum MaxFeaturesPolicy {
 }
 
 /// Configuration for training a decision tree.
-#[derive(Clone, PartialEq, Eq, Debug)]
-pub struct Config {
+#[derive(Clone, PartialEq, Debug)]
+pub struct TrainConfig {
     /// Max depth of a tree.
     pub max_depth: usize,
 
@@ -51,6 +48,34 @@ pub struct Config {
 
     /// Forces leaves to have at least min_samples_leaf samples.
     pub min_samples_leaf: usize,
+
+    pub weights: Vec<SampleWeight>,
+}
+
+impl Default for TrainConfig {
+    fn default() -> Self {
+        Self {
+            max_depth: usize::MAX,
+            max_features: MaxFeaturesPolicy::NUMBER(usize::MAX),
+            seed: 42,
+            min_samples_leaf: 1,
+            min_samples_split: 2,
+            weights: Vec::new(),
+        }
+    }
+}
+
+impl TrainConfig {
+    pub fn scale_weights(&mut self, scalars: &[SampleWeight]) {
+        if self.weights.is_empty() {
+            self.weights = scalars.to_vec();
+        } else {
+            assert!(self.weights.len() == scalars.len());
+            for (w, &s) in self.weights.iter_mut().zip(scalars.iter()) {
+                *w *= s;
+            }
+        }
+    }
 }
 
 struct FeaturePermutation {
@@ -59,9 +84,11 @@ struct FeaturePermutation {
 }
 
 pub struct TrainSpace<'a, T> {
-    dataview: DatasetView<'a>,
+    data: &'a [f32],
     samples: Vec<u32>,
     targets: Vec<(T, SampleWeight)>,
+    num_features: usize,
+    dataset_size: usize,
 }
 
 struct Trainer<'a, Target, S, Aggr>
@@ -71,7 +98,7 @@ where
     Aggr: Aggregator<Target>,
 {
     max_features: usize,
-    conf: Config,
+    config: TrainConfig,
     space: TrainSpace<'a, Target>,
     tree: DecisionTree,
     splitter: S,
@@ -103,27 +130,27 @@ impl FeaturePermutation {
 }
 
 pub fn train<Target: Copy>(
-    tv: TrainView<Target>,
-    conf: Config,
+    ts: &Trainset<Target>,
+    config: TrainConfig,
     splitter: impl Splitter<Target>,
     aggregator: &mut impl Aggregator<Target>,
 ) -> DecisionTree {
-    let space = TrainSpace::new(tv);
+    let space = TrainSpace::new(ts, &config.weights);
     let num_features = space.num_features();
 
-    let max_features = match conf.max_features {
+    let max_features = match config.max_features {
         MaxFeaturesPolicy::SQRT => (num_features as f32).sqrt() as usize,
         MaxFeaturesPolicy::LOG => (num_features as f32).log2() as usize,
         MaxFeaturesPolicy::NUMBER(n) => n.min(num_features),
     };
 
-    let rng = (max_features < num_features).then_some(SmallRng::seed_from_u64(conf.seed));
+    let rng = (max_features < num_features).then_some(SmallRng::seed_from_u64(config.seed));
 
     let num_features = space.num_features();
     let mut trainer = Trainer {
         max_features,
         features_perm: FeaturePermutation::new(num_features, rng),
-        conf,
+        config,
         space,
         tree: DecisionTree::new(num_features as u16),
         splitter,
@@ -145,9 +172,9 @@ where
             vec![(self.tree.root(), 0..self.space.size(), 0); 1];
 
         while let Some((node, range, depth)) = stack.pop() {
-            let split = if depth < self.conf.max_depth
-                && range.len() >= self.conf.min_samples_split
-                && range.len() >= 2 * self.conf.min_samples_leaf
+            let split = if depth < self.config.max_depth
+                && range.len() >= self.config.min_samples_split
+                && range.len() >= 2 * self.config.min_samples_leaf
             {
                 self.find_best_split(&range)
             } else {
@@ -209,28 +236,34 @@ where
 }
 
 impl<'a, T: Copy> TrainSpace<'a, T> {
-    pub fn new(ts: TrainView<'a, T>) -> TrainSpace<'a, T> {
-        let amount = ts.weights.iter().filter(|&x| *x > 0.).count();
-        let mut samples: Vec<u32> = Vec::with_capacity(amount);
-        let mut weighted_targets: Vec<(T, SampleWeight)> = Vec::with_capacity(amount);
+    pub fn new(ts: &'a Trainset<'a, T>, weights: &[SampleWeight]) -> TrainSpace<'a, T> {
+        let mut samples: Vec<u32> = Vec::new();
+        let mut weighted_targets: Vec<(T, SampleWeight)> = Vec::new();
 
-        for (i, (&t, &w)) in ts.targets.iter().zip(ts.weights.iter()).enumerate() {
-            if w > 0. {
-                samples.push(i as u32);
-                weighted_targets.push((t, w));
+        if weights.is_empty() {
+            samples = (0..ts.targets.len()).map(|x| x as u32).collect();
+            weighted_targets = ts.targets.iter().map(|&t| (t, 1.0)).collect();
+        } else {
+            for (i, (&t, &w)) in ts.targets.iter().zip(weights.iter()).enumerate() {
+                if w > 0. {
+                    samples.push(i as u32);
+                    weighted_targets.push((t, w));
+                }
             }
         }
 
         TrainSpace {
-            dataview: ts.dataview,
+            data: &ts.data,
             samples,
             targets: weighted_targets,
+            num_features: ts.data.len() / ts.targets.len(),
+            dataset_size: ts.targets.len(),
         }
     }
 
     #[inline(always)]
     pub fn num_features(&self) -> usize {
-        self.dataview.num_features()
+        self.num_features
     }
 
     #[inline(always)]
@@ -259,7 +292,8 @@ impl<'a, T: Copy> TrainSpace<'a, T> {
 
     #[inline(always)]
     fn feature_val(&self, id: u32, feature: usize) -> f32 {
-        self.dataview.feature_val(id as usize, feature)
+        //self.dataview.feature_val(id as usize, feature)
+        self.data[self.dataset_size * feature + id as usize]
     }
 
     #[inline(always)]
