@@ -1,4 +1,15 @@
 # Changelog
+## v0.3.0
+* Improved training interface. Training config is removed. Instead, each model provides
+`::trainer()` method that constructs `Model::Trainer` object, acting as a builder for setting
+optional parameters.
+* Added user-defined `f32` sample weights which are supplied using `with_weights` trainer method.
+* More compact decision tree, the size of regressor tree is approximately `8*N`, where `N` is the
+number of nodes. Classification tree requires ~ `8*N + 2*N*number_of_classes` bytes.
+* Improved and restructured documentation.
+* Removed adaptive class-weight packing. It is incompatible with `f32` sample weights.
+* Bugfix. Fixed incorrect number of features during random forest training.
+
 ## v0.2.0
 * Added classification and regression tests and a python script for comparison. This allows to
   easily verify that Rafor predicitons agrees with other ML software.
