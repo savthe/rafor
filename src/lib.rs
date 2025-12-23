@@ -51,13 +51,13 @@
 //!
 //! `min_samples_split: usize`, the minimal samples in node to consider splitting it.
 //!
+//! `sample_weights: Vec<f32>` defines the weight for each sample. If empty, each sample is weighted
+//! with 1.0
+//!
 //! ## Ensemble parameters
 //! `num_trees: usize` defines the number of individual trees in ensemble.
 //!
 //! `num_threads: usize` defines the number of CPU threads to use for training.
-//!
-//! `sample_weights: Vec<f32>` defines the weight for each sample. If empty, each sample is weighted
-//! with 1.0
 //!
 //! # Model serialization and deserialization
 //! All models support [serde](https://docs.rs/serde/latest/serde/), so any lib that supports `serde`

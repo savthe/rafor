@@ -51,6 +51,9 @@ is less than the total number of features.
 
 `min_samples_split: usize`, the minimal samples in node to consider splitting it.
 
+`sample_weights: Vec<f32>` defines the weight for each sample. If empty, each sample is weighted
+with 1.0
+
 ## Ensemble parameters
 `num_trees: usize` defines the number of individual trees in ensemble.
 
