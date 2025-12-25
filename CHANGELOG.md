@@ -4,8 +4,8 @@
 `::trainer()` method that constructs `Model::Trainer` object, acting as a builder for setting
 optional parameters.
 * Added user-defined `f32` sample weights which are supplied using `with_weights` trainer method.
-* More compact decision tree, the size of regressor tree is approximately `8*N`, where `N` is the
-number of nodes. Classification tree requires ~ `8*N + 2*N*number_of_classes` bytes.
+* More compact decision tree. The size of regressor tree is approximately `8*N` bytes, where `N` is
+the number of nodes. Classification tree requires approximately `8*N + 2*N*number_of_classes` bytes.
 * Improved and restructured documentation.
 * Removed adaptive class-weight packing. It is incompatible with `f32` sample weights.
 * Bugfix. Fixed incorrect number of features during random forest training.
