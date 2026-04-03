@@ -1,6 +1,6 @@
 [package]
 name = "rafor"
-version = "0.3.0"
+version = "0.4.0-alpha"
 edition = "2024"
 license = "MIT OR Apache-2.0"
 authors = ["Andrei Stroganov <savthe@gmail.com>"]
@@ -17,6 +17,7 @@ argminmax = { version = "0.6", default-features = false, features = ["float"] }
 radsort = "0.1.1"
 rand = "0.9.1"
 serde = { version = "1.0.219", features = ["derive"] }
+bitvec = { version = "1.0", features = ["serde"] }
 
 [dev-dependencies]
 bincode = { version = "2.0", features = ["serde"] }

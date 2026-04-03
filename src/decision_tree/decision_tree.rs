@@ -1,3 +1,4 @@
+use bitvec::prelude::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq)]
@@ -36,7 +37,145 @@ impl Default for InternalNode {
     }
 }
 
+// Serialized tree doesn't need information about child indexes if tree traverse order is defined.
+// We will use BFS and recreate indexes during deserialization.
+// For serialization we use PackedTree structure which effectively holds node values.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+struct PackedTree {
+    thresholds: Vec<f32>,
+    features: Vec<u16>,
+    left_leaves_mask: BitVec,
+    right_leaves_mask: BitVec,
+    leaves: Vec<u32>,
+    num_features: u16,
+}
+
+impl From<DecisionTree> for PackedTree {
+    fn from(tree: DecisionTree) -> Self {
+        // Queue of tree node indexes on next layer.
+        let mut pending: Vec<usize> = vec![0];
+
+        let mut packed = PackedTree {
+            thresholds: Vec::new(),
+            features: Vec::new(),
+            left_leaves_mask: BitVec::new(),
+            right_leaves_mask: BitVec::new(),
+            leaves: Vec::new(),
+            num_features: tree.num_features,
+        };
+
+        // While we have nodes to pack.
+        while !pending.is_empty() {
+            let mut next_pending: Vec<usize> = Vec::new();
+            for &i in &pending {
+                let node = &tree.nodes[i];
+                packed.thresholds.push(node.threshold);
+                packed.features.push(node.feature);
+                packed.left_leaves_mask.push(node.left_is_leaf);
+                packed.right_leaves_mask.push(node.right_is_leaf);
+
+                // If node is a leaf, store its payload as leaf data, else is is a child index. 
+                if node.left_is_leaf {
+                    packed.leaves.push(node.left);
+                } else {
+                    next_pending.push(node.left as usize);
+                }
+
+                if node.right_is_leaf {
+                    packed.leaves.push(node.right);
+                } else {
+                    next_pending.push(node.right as usize);
+                }
+            }
+            pending = next_pending;
+        }
+
+        packed
+    }
+}
+
+impl From<PackedTree> for DecisionTree {
+    fn from(packed: PackedTree) -> Self {
+        let mut tree = DecisionTree {
+            nodes: Vec::new(),
+            num_features: packed.num_features,
+        };
+
+        // Number of nodes to be read from current layer. Initially -- only root.
+        let mut pending_size = 1;
+
+        // Leaves are accessed sequentially, leaf_data_index is an index of leaf data in leaves
+        // vector of a next leaf to be added to tree.
+        let mut leaf_data_index = 0;
+
+        // Index of first node on previous layer.
+        let mut parents_offset = 0;
+
+        while pending_size > 0 {
+            let cur_layer_offset = tree.nodes.len();
+            let mut next_pending_size = 0;
+            // Create layer nodes and partially initialize them.
+            for i in 0..pending_size {
+                let offset = cur_layer_offset + i;
+                let mut node = InternalNode {
+                    left_is_leaf: packed.left_leaves_mask[offset],
+                    right_is_leaf: packed.right_leaves_mask[offset],
+                    feature: packed.features[offset],
+                    threshold: packed.thresholds[offset],
+                    left: 0,
+                    right: 0,
+                };
+
+                if node.left_is_leaf {
+                    node.left = packed.leaves[leaf_data_index];
+                    leaf_data_index += 1;
+                }
+                else {
+                    next_pending_size += 1;
+                }
+
+                if node.right_is_leaf {
+                    node.right = packed.leaves[leaf_data_index];
+                    leaf_data_index += 1;
+                }
+                else {
+                    next_pending_size += 1;
+                }
+
+                tree.nodes.push(node);
+            }
+
+            // Connect parent nodes with current layer nodes.
+            if tree.nodes.len() > 1 {
+                let mut child_index = cur_layer_offset;
+                while parents_offset < cur_layer_offset {
+                    let parent = &mut tree.nodes[parents_offset];
+                    if !parent.left_is_leaf {
+                        parent.left = child_index as u32;
+                        child_index += 1;
+                    }
+
+                    if !parent.right_is_leaf {
+                        parent.right = child_index as u32;
+                        child_index += 1;
+                    }
+
+                    parents_offset += 1;
+                }
+                assert!(child_index == tree.nodes.len());
+            }
+
+            pending_size = next_pending_size;
+        }
+
+        assert!(leaf_data_index == packed.leaves.len());
+
+        tree
+    }
+}
+
 #[derive(Default, Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(from = "PackedTree", into = "PackedTree")]
 pub struct DecisionTree {
     nodes: Vec<InternalNode>,
     num_features: u16,
