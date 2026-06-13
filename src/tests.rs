@@ -11,7 +11,7 @@ fn classifier_tree_overfit_self() {
         .with_max_depth(500)
         .train(&samples, &targets);
 
-    let y_pred = predictor.predict(&samples);
+    let y_pred = predictor.predict_batch(&samples);
     let acc = classifier_accuracy(&y_pred, &targets);
     assert!(acc == 1.0);
 }
@@ -24,7 +24,7 @@ fn classifier_tree_depth10() {
         .with_max_depth(10)
         .train(&x_train, &y_train);
 
-    let y_pred = predictor.predict(&x_pred);
+    let y_pred = predictor.predict_batch(&x_pred);
     let acc = classifier_accuracy(&y_pred, &y_ref);
     assert!(acc >= 0.61);
 }
@@ -37,7 +37,7 @@ fn random_forest_classifier_overfit_self() {
         .with_trees(100)
         .train(&samples, &targets);
 
-    let y_pred = predictor.predict(&samples, MAX_THREADS);
+    let y_pred = predictor.predict_batch(&samples, MAX_THREADS);
     let acc = classifier_accuracy(&y_pred, &targets);
     assert!(acc == 1.0);
 }
@@ -51,7 +51,7 @@ fn random_forest_classifier_depth10() {
         .with_trees(100)
         .train(&x_train, &y_train);
 
-    let y_pred = predictor.predict(&x_pred, MAX_THREADS);
+    let y_pred = predictor.predict_batch(&x_pred, MAX_THREADS);
     let acc = classifier_accuracy(&y_pred, &y_ref);
     assert!(acc >= 0.67);
 }
@@ -64,7 +64,7 @@ fn random_forest_classifier_depth10_self() {
         .with_trees(100)
         .train(&samples, &targets);
 
-    let y_pred = predictor.predict(&samples, MAX_THREADS);
+    let y_pred = predictor.predict_batch(&samples, MAX_THREADS);
     let acc = classifier_accuracy(&y_pred, &targets);
     assert!(acc >= 0.93);
 }
@@ -80,7 +80,7 @@ fn random_forest_binary_classifier() {
         .with_trees(100)
         .train(&x_train, &y_train);
 
-    let y_pred = predictor.predict(&x_pred, MAX_THREADS);
+    let y_pred = predictor.predict_batch(&x_pred, MAX_THREADS);
     let f1 = f1score(&y_pred, &y_ref);
     assert!(f1 >= 0.79);
 }
@@ -114,7 +114,7 @@ fn decision_tree_regressor_overfit_self() {
         .with_max_depth(500)
         .train(&samples, &targets);
 
-    let y_pred = predictor.predict(&samples);
+    let y_pred = predictor.predict_batch(&samples);
     let mse = mean_squared_error(&y_pred, &targets);
     assert!(mse < 0.000001);
 }
@@ -127,7 +127,7 @@ fn decision_tree_regressor() {
         .with_max_depth(500)
         .train(&x_train, &y_train);
 
-    let y_pred = predictor.predict(&x_pred);
+    let y_pred = predictor.predict_batch(&x_pred);
     let mse = mean_squared_error(&y_pred, &y_ref);
     assert!(mse < 23.0);
 }
@@ -140,7 +140,7 @@ fn random_forest_regressor_overfit_self() {
         .with_trees(25)
         .train(&samples, &targets);
 
-    let y_pred = predictor.predict(&samples, MAX_THREADS);
+    let y_pred = predictor.predict_batch(&samples, MAX_THREADS);
     let mse = mean_squared_error(&y_pred, &targets);
     assert!(mse < 1.7);
 }
@@ -152,7 +152,7 @@ fn random_forest_regressor(max_depth: usize) -> f64 {
         .with_max_depth(max_depth)
         .train(&x_train, &y_train);
 
-    let y_pred = predictor.predict(&x_pred, MAX_THREADS);
+    let y_pred = predictor.predict_batch(&x_pred, MAX_THREADS);
     mean_squared_error(&y_pred, &y_ref)
 }
 

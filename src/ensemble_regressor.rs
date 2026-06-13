@@ -27,7 +27,7 @@ use serde::{Deserialize, Serialize};
 /// let dataset = [0.7, 0.0, 0.8, 1.0, 0.7, 0.0];
 /// let targets = [1.0, 0.5, 0.2];
 /// let predictor = rf::Regressor::trainer().train(&dataset, &targets);
-/// let predictions = predictor.predict(&dataset, 1);
+/// let predictions = predictor.predict_batch(&dataset, 1);
 /// println!("{:?}", predictions);
 /// ```
 #[derive(Default, Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -82,7 +82,7 @@ impl Trainer {
 
 impl Regressor {
     /// Predicts regression values for a set of samples using `num_threads` threads.
-    pub fn predict(&self, dataset: &[f32], num_threads: usize) -> Vec<FloatTarget> {
+    pub fn predict_batch(&self, dataset: &[f32], num_threads: usize) -> Vec<FloatTarget> {
         ensemble_predictor::predict(&self.ensemble, dataset, num_threads)
     }
 

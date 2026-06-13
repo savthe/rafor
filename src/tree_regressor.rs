@@ -24,7 +24,7 @@ use serde::{Deserialize, Serialize};
 /// let dataset = [0.7, 0.0, 0.8, 1.0, 0.7, 0.0];
 /// let targets = [1.0, 0.5, 0.2];
 /// let predictor = dt::Regressor::trainer().train(&dataset, &targets);
-/// let predictions = predictor.predict(&dataset);
+/// let predictions = predictor.predict_batch(&dataset);
 /// println!("Predictions: {:?}", predictions);
 /// ```
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -61,7 +61,7 @@ impl Trainer {
 impl Regressor {
     /// Predicts regression values for a set of samples.
     /// Dataset is a vector of floats with length multiple of num_features().
-    pub fn predict(&self, dataset: &[f32]) -> Vec<FloatTarget> {
+    pub fn predict_batch(&self, dataset: &[f32]) -> Vec<FloatTarget> {
         //let view = DatasetView::new(dataset, self.regressor.num_features());
         self.regressor.predict(dataset)
     }

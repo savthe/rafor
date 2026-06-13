@@ -26,7 +26,7 @@ use serde::{Deserialize, Serialize};
 /// let dataset = [0.7, 0.0, 0.8, 1.0, 0.7, 0.0];
 /// let targets = [1, 5, 1];
 /// let predictor = dt::Classifier::trainer().train(&dataset, &targets);
-/// let predictions = predictor.predict(&dataset);
+/// let predictions = predictor.predict_batch(&dataset);
 /// assert_eq!(&predictions, &[1, 5, 1]);
 /// ```
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -64,7 +64,7 @@ impl Trainer {
 impl Classifier {
     /// Predicts classes for a set of samples.
     /// Dataset is a vector of floats with length multiple of num_features().
-    pub fn predict(&self, dataset: &[f32]) -> Vec<i64> {
+    pub fn predict_batch(&self, dataset: &[f32]) -> Vec<i64> {
         classify(&self.proba(dataset), &self.classes_map)
     }
 

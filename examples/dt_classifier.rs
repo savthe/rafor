@@ -17,7 +17,7 @@ fn main() {
         .train(&dataset, &targets);
 
     // Get predictions for same dataset.
-    let predictions = predictor.predict(&dataset);
+    let predictions = predictor.predict_batch(&dataset);
     println!("Predictions: {:?}", predictions);
 
     let proba = predictor.proba(&dataset);

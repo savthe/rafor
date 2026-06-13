@@ -27,7 +27,7 @@ use serde::{Deserialize, Serialize};
 /// let dataset = [0.7, 0.0, 0.8, 1.0, 0.7, 0.0];
 /// let targets = [1, 5, 1];
 /// let predictor = rf::Classifier::trainer().train(&dataset, &targets);
-/// let predictions = predictor.predict(&dataset, 1);
+/// let predictions = predictor.predict_batch(&dataset, 1);
 /// assert_eq!(&predictions, &[1, 5, 1]);
 /// ```
 ///
@@ -93,7 +93,7 @@ impl Trainer {
 impl Classifier {
     /// Predicts classes for a set of samples using `num_threads` threads.
     /// Dataset is a vector of floats with length multiple of num_features().
-    pub fn predict(&self, dataset: &[f32], num_threads: usize) -> Vec<i64> {
+    pub fn predict_batch(&self, dataset: &[f32], num_threads: usize) -> Vec<i64> {
         classify(&self.proba(dataset, num_threads), &self.classes_map)
     }
 

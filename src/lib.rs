@@ -90,7 +90,7 @@
 //!         .train(&dataset, &targets);
 //!
 //!     // Get predictions for same dataset.
-//!     let predictions = predictor.predict(&dataset, num_cpus::get());
+//!     let predictions = predictor.predict_batch(&dataset, num_cpus::get());
 //!     println!("Predictions: {:?}", predictions);
 //!
 //!     // Now let's get probability distributions for each class. Use all CPU cores.

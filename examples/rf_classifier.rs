@@ -22,7 +22,7 @@ fn main() {
         .train(&dataset, &targets);
 
     // Get predictions for same dataset.
-    let predictions = predictor.predict(&dataset, num_cpus::get());
+    let predictions = predictor.predict_batch(&dataset, num_cpus::get());
     println!("Predictions: {:?}", predictions);
 
     let proba = predictor.proba(&dataset, num_cpus::get());

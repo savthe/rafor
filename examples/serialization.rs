@@ -18,6 +18,6 @@ fn main() {
     let config = bincode::config::standard();
     let predictor: Classifier = bincode::serde::decode_from_std_read(&mut fin, config).unwrap();
 
-    let predictions = predictor.predict(&dataset, 1);
+    let predictions = predictor.predict_batch(&dataset, 1);
     assert_eq!(&predictions, &[1, 5, 1]);
 }
