@@ -4,7 +4,7 @@ use rafor::rf::Classifier;
 fn main() {
     let dataset = [0.7, 0.0, 0.8, 1.0, 0.7, 0.0];
     let targets = [1, 5, 1];
-    let predictor = Classifier::trainer().train(&dataset, &targets);
+    let predictor: Classifier = Classifier::trainer().train(&dataset, &targets);
 
     // Storing model.
     let mut fout = File::create("model.bin").unwrap();

@@ -1,5 +1,5 @@
 use rafor::dt::Regressor;
-use rafor::prelude::*; // Required to use .with_option builders.
+use rafor::{prelude::*, CompactTree}; // Required to use .with_option builders.
 
 fn main() {
     // 5 samples with 2 features each.
@@ -12,7 +12,7 @@ fn main() {
         0.4, 2.1
     ];
     let targets = [0.8, 0.2, 0.7, 0.3, 1.2];
-    let predictor = Regressor::trainer()
+    let predictor = Regressor::<CompactTree>::trainer()
         .with_max_depth(2)
         .train(&dataset, &targets);
 

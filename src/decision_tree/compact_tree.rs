@@ -1,6 +1,8 @@
 use bitvec::prelude::*;
 use serde::{Deserialize, Serialize};
 
+use super::{Resolve, Trainable};
+
 #[derive(Clone, Debug, PartialEq)]
 enum Child {
     LEFT,
@@ -9,7 +11,7 @@ enum Child {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct NodeHandle {
+pub struct Handle {
     parent: u32,
     child: Child,
 }
@@ -47,11 +49,10 @@ struct PackedTree {
     left_leaves_mask: BitVec,
     right_leaves_mask: BitVec,
     leaves: Vec<u32>,
-    num_features: u16,
 }
 
-impl From<DecisionTree> for PackedTree {
-    fn from(tree: DecisionTree) -> Self {
+impl From<CompactTree> for PackedTree {
+    fn from(tree: CompactTree) -> Self {
         // Queue of tree node indexes on next layer.
         let mut pending: Vec<usize> = vec![0];
 
@@ -61,7 +62,6 @@ impl From<DecisionTree> for PackedTree {
             left_leaves_mask: BitVec::new(),
             right_leaves_mask: BitVec::new(),
             leaves: Vec::new(),
-            num_features: tree.num_features,
         };
 
         // While we have nodes to pack.
@@ -74,7 +74,7 @@ impl From<DecisionTree> for PackedTree {
                 packed.left_leaves_mask.push(node.left_is_leaf);
                 packed.right_leaves_mask.push(node.right_is_leaf);
 
-                // If node is a leaf, store its payload as leaf data, else is is a child index. 
+                // If node is a leaf, store its payload as leaf data, else is is a child index.
                 if node.left_is_leaf {
                     packed.leaves.push(node.left);
                 } else {
@@ -94,12 +94,9 @@ impl From<DecisionTree> for PackedTree {
     }
 }
 
-impl From<PackedTree> for DecisionTree {
+impl From<PackedTree> for CompactTree {
     fn from(packed: PackedTree) -> Self {
-        let mut tree = DecisionTree {
-            nodes: Vec::new(),
-            num_features: packed.num_features,
-        };
+        let mut tree = CompactTree { nodes: Vec::new() };
 
         // Number of nodes to be read from current layer. Initially -- only root.
         let mut pending_size = 1;
@@ -129,16 +126,14 @@ impl From<PackedTree> for DecisionTree {
                 if node.left_is_leaf {
                     node.left = packed.leaves[leaf_data_index];
                     leaf_data_index += 1;
-                }
-                else {
+                } else {
                     next_pending_size += 1;
                 }
 
                 if node.right_is_leaf {
                     node.right = packed.leaves[leaf_data_index];
                     leaf_data_index += 1;
-                }
-                else {
+                } else {
                     next_pending_size += 1;
                 }
 
@@ -176,33 +171,46 @@ impl From<PackedTree> for DecisionTree {
 
 #[derive(Default, Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(from = "PackedTree", into = "PackedTree")]
-pub struct DecisionTree {
+pub struct CompactTree {
     nodes: Vec<InternalNode>,
-    num_features: u16,
 }
 
-impl DecisionTree {
-    pub fn new(num_features: u16) -> Self {
-        Self {
-            nodes: Vec::new(),
-            num_features,
+impl Resolve for CompactTree {
+    fn resolve(&self, sample: &[f32]) -> u32 {
+        assert!(!self.nodes.is_empty());
+        let mut id = 0;
+        let mut is_leaf = false;
+
+        while !is_leaf {
+            let node = &self.nodes[id as usize];
+            if sample[node.feature as usize] <= node.threshold {
+                id = node.left;
+                is_leaf = node.left_is_leaf;
+            } else {
+                id = node.right;
+                is_leaf = node.right_is_leaf;
+            }
         }
+
+        id as u32
+    }
+}
+
+impl Trainable for CompactTree {
+    type Handle = Handle;
+    fn new() -> Self {
+        Self { nodes: Vec::new() }
     }
 
-    pub fn root(&self) -> NodeHandle {
+    fn root(&self) -> Handle {
         assert!(self.nodes.is_empty());
-        NodeHandle {
+        Handle {
             parent: 0,
             child: Child::ROOT,
         }
     }
 
-    pub fn split(
-        &mut self,
-        handle: &NodeHandle,
-        feature: u16,
-        threshold: f32,
-    ) -> (NodeHandle, NodeHandle) {
+    fn split(&mut self, handle: &Handle, feature: u16, threshold: f32) -> (Handle, Handle) {
         let new_node = InternalNode {
             feature,
             left_is_leaf: true,
@@ -227,23 +235,18 @@ impl DecisionTree {
             _ => {}
         };
 
-        let left_handle = NodeHandle {
+        let left_handle = Handle {
             parent: new_index,
             child: Child::LEFT,
         };
-        let right_handle = NodeHandle {
+        let right_handle = Handle {
             parent: new_index,
             child: Child::RIGHT,
         };
         (left_handle, right_handle)
     }
 
-    #[inline(always)]
-    pub fn num_features(&self) -> usize {
-        self.num_features as usize
-    }
-
-    pub fn set_leaf_value(&mut self, handle: &NodeHandle, value: u32) {
+    fn set_leaf_value(&mut self, handle: &Handle, value: u32) {
         match handle.child {
             Child::LEFT => {
                 self.nodes[handle.parent as usize].left = value;
@@ -265,24 +268,5 @@ impl DecisionTree {
                 self.nodes = vec![root];
             }
         };
-    }
-
-    pub fn predict(&self, sample: &[f32]) -> u32 {
-        assert!(!self.nodes.is_empty());
-        let mut id = 0;
-        let mut is_leaf = false;
-
-        while !is_leaf {
-            let node = &self.nodes[id as usize];
-            if sample[node.feature as usize] <= node.threshold {
-                id = node.left;
-                is_leaf = node.left_is_leaf;
-            } else {
-                id = node.right;
-                is_leaf = node.right_is_leaf;
-            }
-        }
-
-        id as u32
     }
 }

@@ -14,7 +14,7 @@ fn main() {
     ];
     let targets = [1, 5, 1, -15, 5];
 
-    let predictor = Classifier::trainer()
+    let predictor: Classifier = Classifier::trainer()
         .with_max_depth(15)
         .with_trees(40)
         .with_threads(num_cpus::get())

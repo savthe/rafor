@@ -1,10 +1,10 @@
 use crate::{
     classify, decision_tree,
-    decision_tree::ClassifierModel,
+    decision_tree::{BlockTree, ClassifierModel, Predictor},
     ensemble_predictor,
     ensemble_trainer::{self, EnsembleConfig},
     trainer_builders::*,
-    ClassDecode, ClassTarget, ClassesMapping, MaxFeaturesPolicy, Trainset,
+    BatchPredictor, ClassDecode, ClassTarget, ClassesMapping, MaxFeaturesPolicy, Trainset,
 };
 use serde::{Deserialize, Serialize};
 /// A random forest classifier.
@@ -26,53 +26,57 @@ use serde::{Deserialize, Serialize};
 /// use rafor::rf;
 /// let dataset = [0.7, 0.0, 0.8, 1.0, 0.7, 0.0];
 /// let targets = [1, 5, 1];
-/// let predictor = rf::Classifier::trainer().train(&dataset, &targets);
+/// let predictor: rf::Classifier = rf::Classifier::trainer().train(&dataset, &targets);
 /// let predictions = predictor.predict_batch(&dataset, 1);
 /// assert_eq!(&predictions, &[1, 5, 1]);
 /// ```
 ///
 #[derive(Default, Clone, PartialEq, Debug, Serialize, Deserialize)]
-pub struct Classifier {
-    ensemble: Vec<ClassifierModel>,
+pub struct Classifier<P: Predictor = BlockTree> {
+    ensemble: Vec<ClassifierModel<P>>,
     classes_map: ClassesMapping,
 }
 
 /// Trainer for ensemble classifier.
 #[derive(Clone, PartialEq, Debug)]
-pub struct Trainer {
+pub struct Trainer<P: Predictor> {
     pub config: EnsembleConfig,
+    _marker: std::marker::PhantomData<P>,
 }
 
-impl Default for Trainer {
+impl<P: Predictor> Default for Trainer<P> {
     fn default() -> Self {
         let mut config = EnsembleConfig::default();
         config.tree_config_proto.max_features = MaxFeaturesPolicy::SQRT;
-        Self { config }
+        Self {
+            config,
+            _marker: std::marker::PhantomData::default(),
+        }
     }
 }
 
 #[derive(Clone)]
-struct Trainee {
-    tree: ClassifierModel,
+struct Trainee<P: Predictor> {
+    tree: ClassifierModel<P>,
     num_classes: usize,
 }
 
-impl ensemble_trainer::Trainable<ClassTarget> for Trainee {
+impl<P: Predictor> ensemble_trainer::Trainable<ClassTarget> for Trainee<P> {
     fn fit(&mut self, ts: &Trainset<ClassTarget>, config: decision_tree::TrainConfig) {
         self.tree = ClassifierModel::train(ts, self.num_classes, &config);
     }
 }
 
-impl ensemble_predictor::Predictor for ClassifierModel {
+impl<P: Predictor> BatchPredictor for ClassifierModel<P> {
     fn predict(&self, dataset: &[f32]) -> Vec<f32> {
-        self.predict(dataset)
+        Self::predict(self, dataset)
     }
 }
 
-impl Trainer {
+impl<P: Predictor + Default + Clone + Sync + Send> Trainer<P> {
     /// Trains a classifier random forest with dataset given by a slice of length divisible by
     /// targets.len().
-    pub fn train(&self, data: &[f32], labels: &[i64]) -> Classifier {
+    pub fn train(&self, data: &[f32], labels: &[i64]) -> Classifier<P> {
         let (classes_map, labels_enc) = ClassesMapping::with_encode(labels);
 
         let proto = Trainee {
@@ -90,7 +94,7 @@ impl Trainer {
     }
 }
 
-impl Classifier {
+impl<P: Predictor + Send + Sync> Classifier<P> {
     /// Predicts classes for a set of samples using `num_threads` threads.
     /// Dataset is a vector of floats with length multiple of num_features().
     pub fn predict_batch(&self, dataset: &[f32], num_threads: usize) -> Vec<i64> {
@@ -114,28 +118,28 @@ impl Classifier {
     }
 
     /// Provides trainer for training a random forest classifier.
-    pub fn trainer() -> Trainer {
+    pub fn trainer() -> Trainer<P> {
         Trainer::default()
     }
 }
 
-impl ClassDecode for Classifier {
+impl<P: Predictor> ClassDecode for Classifier<P> {
     fn get_decode_table(&self) -> &[i64] {
         self.classes_map.get_decode_table()
     }
 }
 
-impl TrainConfigProvider for Trainer {
+impl<P: Predictor> TrainConfigProvider for Trainer<P> {
     fn train_config(&mut self) -> &mut decision_tree::TrainConfig {
         &mut self.config.tree_config_proto
     }
 }
 
-impl EnsembleConfigProvider for Trainer {
+impl<P: Predictor> EnsembleConfigProvider for Trainer<P> {
     fn ensemble_config(&mut self) -> &mut EnsembleConfig {
         &mut self.config
     }
 }
 
-impl CommonTrainerBuilder for Trainer {}
-impl EnsembleTrainerBuilder for Trainer {}
+impl<P: Predictor> CommonTrainerBuilder for Trainer<P> {}
+impl<P: Predictor> EnsembleTrainerBuilder for Trainer<P> {}

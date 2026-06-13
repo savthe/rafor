@@ -1,4 +1,4 @@
-use crate::{dt, prelude::*, rf};
+use crate::{dt, prelude::*, rf, BlockTree, CompactTree};
 use std::{fs::read_to_string, str::FromStr};
 
 const MAX_THREADS: usize = 8;
@@ -7,7 +7,7 @@ const MAX_THREADS: usize = 8;
 #[test]
 fn classifier_tree_overfit_self() {
     let (samples, targets) = load_dataset::<i64>("datasets/winequality-red.csv", ";", true);
-    let predictor = dt::Classifier::trainer()
+    let predictor = dt::Classifier::<BlockTree>::trainer()
         .with_max_depth(500)
         .train(&samples, &targets);
 
@@ -20,7 +20,7 @@ fn classifier_tree_overfit_self() {
 fn classifier_tree_depth10() {
     let (samples, targets) = load_dataset::<i64>("datasets/winequality-red.csv", ";", true);
     let (x_train, y_train, x_pred, y_ref) = split_dataset(&samples, &targets);
-    let predictor = dt::Classifier::trainer()
+    let predictor = dt::Classifier::<CompactTree>::trainer()
         .with_max_depth(10)
         .train(&x_train, &y_train);
 
@@ -32,7 +32,7 @@ fn classifier_tree_depth10() {
 #[test]
 fn random_forest_classifier_overfit_self() {
     let (samples, targets) = load_dataset::<i64>("datasets/winequality-red.csv", ";", true);
-    let predictor = rf::Classifier::trainer()
+    let predictor = rf::Classifier::<BlockTree>::trainer()
         .with_max_depth(500)
         .with_trees(100)
         .train(&samples, &targets);
@@ -46,7 +46,7 @@ fn random_forest_classifier_overfit_self() {
 fn random_forest_classifier_depth10() {
     let (samples, targets) = load_dataset::<i64>("datasets/winequality-red.csv", ";", true);
     let (x_train, y_train, x_pred, y_ref) = split_dataset(&samples, &targets);
-    let predictor = rf::Classifier::trainer()
+    let predictor = rf::Classifier::<CompactTree>::trainer()
         .with_max_depth(10)
         .with_trees(100)
         .train(&x_train, &y_train);
@@ -59,7 +59,7 @@ fn random_forest_classifier_depth10() {
 #[test]
 fn random_forest_classifier_depth10_self() {
     let (samples, targets) = load_dataset::<i64>("datasets/winequality-red.csv", ";", true);
-    let predictor = rf::Classifier::trainer()
+    let predictor = rf::Classifier::<BlockTree>::trainer()
         .with_max_depth(10)
         .with_trees(100)
         .train(&samples, &targets);
@@ -75,7 +75,7 @@ fn random_forest_binary_classifier() {
     let targets: Vec<i64> = targets.iter().map(|t| (t == "h") as i64).collect();
 
     let (x_train, y_train, x_pred, y_ref) = split_dataset(&samples, &targets);
-    let predictor = rf::Classifier::trainer()
+    let predictor: rf::Classifier = rf::Classifier::trainer()
         .with_max_depth(10)
         .with_trees(100)
         .train(&x_train, &y_train);
@@ -110,7 +110,7 @@ fn f1score(pred: &[i64], target: &[i64]) -> f64 {
 #[test]
 fn decision_tree_regressor_overfit_self() {
     let (samples, targets) = load_dataset::<f32>("datasets/Folds5x2_pp.csv", ",", true);
-    let predictor = dt::Regressor::trainer()
+    let predictor = dt::Regressor::<CompactTree>::trainer()
         .with_max_depth(500)
         .train(&samples, &targets);
 
@@ -123,7 +123,7 @@ fn decision_tree_regressor_overfit_self() {
 fn decision_tree_regressor() {
     let (samples, targets) = load_dataset::<f32>("datasets/Folds5x2_pp.csv", ",", true);
     let (x_train, y_train, x_pred, y_ref) = split_dataset(&samples, &targets);
-    let predictor = dt::Regressor::trainer()
+    let predictor = dt::Regressor::<BlockTree>::trainer()
         .with_max_depth(500)
         .train(&x_train, &y_train);
 
@@ -135,7 +135,7 @@ fn decision_tree_regressor() {
 #[test]
 fn random_forest_regressor_overfit_self() {
     let (samples, targets) = load_dataset::<f32>("datasets/Folds5x2_pp.csv", ",", true);
-    let predictor = rf::Regressor::trainer()
+    let predictor = rf::Regressor::<CompactTree>::trainer()
         .with_max_depth(1000)
         .with_trees(25)
         .train(&samples, &targets);
@@ -148,7 +148,7 @@ fn random_forest_regressor_overfit_self() {
 fn random_forest_regressor(max_depth: usize) -> f64 {
     let (samples, targets) = load_dataset::<f32>("datasets/Folds5x2_pp.csv", ",", true);
     let (x_train, y_train, x_pred, y_ref) = split_dataset(&samples, &targets);
-    let predictor = rf::Regressor::trainer()
+    let predictor: rf::Regressor = rf::Regressor::trainer()
         .with_max_depth(max_depth)
         .train(&x_train, &y_train);
 

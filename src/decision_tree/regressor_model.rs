@@ -1,37 +1,38 @@
-use super::{splitter::MseSplitter, trainer, DecisionTree, TrainConfig};
+use super::{splitter::MseSplitter, trainer, Predictor, TrainConfig};
 
 use crate::{FloatTarget, SampleWeight, Trainset};
 
 use serde::{Deserialize, Serialize};
 
 #[derive(Default, Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct RegressorModel {
-    tree: DecisionTree,
+pub struct RegressorModel<P: Predictor> {
+    predictor: P,
+    num_features: usize,
 }
 
 #[derive(Default)]
 struct Aggregator {}
 
-impl RegressorModel {
+impl<P: Predictor> RegressorModel<P> {
     pub fn predict(&self, dataset: &[f32]) -> Vec<f32> {
-        assert!(dataset.len() % self.tree.num_features() == 0);
+        assert!(dataset.len() % self.num_features == 0);
         dataset
-            .chunks_exact(self.tree.num_features())
+            .chunks_exact(self.num_features)
             .map(|s| self.predict_one(s))
             .collect()
     }
 
     #[inline(always)]
     pub fn num_features(&self) -> usize {
-        self.tree.num_features()
+        self.num_features
     }
 
     #[inline(always)]
     pub fn predict_one(&self, sample: &[f32]) -> f32 {
-        f32::from_bits(self.tree.predict(sample))
+        f32::from_bits(self.predictor.resolve(sample))
     }
 
-    pub fn train(ts: &Trainset<FloatTarget>, config: &TrainConfig) -> RegressorModel {
+    pub fn train(ts: &Trainset<FloatTarget>, config: &TrainConfig) -> RegressorModel<P> {
         let mut aggregator = Aggregator::default();
         let tree = trainer::train(
             ts,
@@ -40,7 +41,10 @@ impl RegressorModel {
             &mut aggregator,
         );
 
-        RegressorModel { tree }
+        RegressorModel {
+            predictor: tree,
+            num_features: ts.num_features,
+        }
     }
 }
 

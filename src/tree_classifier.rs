@@ -1,6 +1,6 @@
 use crate::{
     classify,
-    decision_tree::{self, ClassifierModel},
+    decision_tree::{self, BlockTree, ClassifierModel, Predictor},
     trainer_builders::*,
     ClassDecode, ClassesMapping, Trainset,
 };
@@ -25,33 +25,34 @@ use serde::{Deserialize, Serialize};
 /// use rafor::dt;
 /// let dataset = [0.7, 0.0, 0.8, 1.0, 0.7, 0.0];
 /// let targets = [1, 5, 1];
-/// let predictor = dt::Classifier::trainer().train(&dataset, &targets);
+/// let predictor = <dt::Classifier>::trainer().train(&dataset, &targets);
 /// let predictions = predictor.predict_batch(&dataset);
 /// assert_eq!(&predictions, &[1, 5, 1]);
 /// ```
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct Classifier {
-    classifier: ClassifierModel,
+pub struct Classifier<P: Predictor = BlockTree> {
+    classifier: ClassifierModel<P>,
     classes_map: ClassesMapping,
 }
 
 /// A trainer for tree classifier.
-#[derive(Clone, PartialEq, Debug, Default)]
-pub struct Trainer {
+#[derive(Clone, PartialEq, Debug)]
+pub struct Trainer<P: Predictor> {
     config: decision_tree::TrainConfig,
+    _marker: std::marker::PhantomData<P>,
 }
 
-impl TrainConfigProvider for Trainer {
+impl<P: Predictor> TrainConfigProvider for Trainer<P> {
     fn train_config(&mut self) -> &mut decision_tree::TrainConfig {
         &mut self.config
     }
 }
 
-impl CommonTrainerBuilder for Trainer {}
+impl<P: Predictor> CommonTrainerBuilder for Trainer<P> {}
 
-impl Trainer {
+impl<P: Predictor> Trainer<P> {
     /// Trains a classifier tree with dataset given by a slice of length divisible by targets.len().
-    pub fn train(&self, data: &[f32], labels: &[i64]) -> Classifier {
+    pub fn train(&self, data: &[f32], labels: &[i64]) -> Classifier<P> {
         let (classes_map, encoded_labels) = ClassesMapping::with_encode(labels);
         let ts = Trainset::with_transposed(data, &encoded_labels);
         Classifier {
@@ -61,7 +62,7 @@ impl Trainer {
     }
 }
 
-impl Classifier {
+impl<P: Predictor> Classifier<P> {
     /// Predicts classes for a set of samples.
     /// Dataset is a vector of floats with length multiple of num_features().
     pub fn predict_batch(&self, dataset: &[f32]) -> Vec<i64> {
@@ -80,8 +81,11 @@ impl Classifier {
     }
 
     /// Provides trainer for training a classifier tree.
-    pub fn trainer() -> Trainer {
-        Trainer::default()
+    pub fn trainer() -> Trainer<P> {
+        Trainer {
+            config: decision_tree::TrainConfig::default(),
+            _marker: std::marker::PhantomData::default(),
+        }
     }
 
     /// Returns a number of features for a trained tree.

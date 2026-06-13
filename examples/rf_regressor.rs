@@ -13,7 +13,7 @@ fn main() {
         0.4, 2.1
     ];
     let targets = [0.8, 0.2, 0.7, 0.3, 1.2];
-    let predictor = Regressor::trainer()
+    let predictor: Regressor = Regressor::trainer()
         .with_max_depth(15)
         .with_trees(40)
         .with_threads(num_cpus::get())

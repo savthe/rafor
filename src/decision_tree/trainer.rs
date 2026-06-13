@@ -1,7 +1,4 @@
-use super::{
-    decision_tree::{DecisionTree, NodeHandle},
-    splitter::Splitter,
-};
+use super::{splitter::Splitter, Trainable};
 use crate::{IndexRange, SampleWeight, Trainset};
 use radsort;
 use rand::{rngs::SmallRng, seq::SliceRandom, SeedableRng};
@@ -91,17 +88,11 @@ pub struct TrainSpace<'a, T> {
     dataset_size: usize,
 }
 
-struct Trainer<'a, Target, S, Aggr>
-where
-    Target: Copy,
-    S: Splitter<Target>,
-    Aggr: Aggregator<Target>,
-{
+struct Trainer<'a, Tgt, Spl, Aggr> {
     max_features: usize,
     config: TrainConfig,
-    space: TrainSpace<'a, Target>,
-    tree: DecisionTree,
-    splitter: S,
+    space: TrainSpace<'a, Tgt>,
+    splitter: Spl,
     features_perm: FeaturePermutation,
     aggregator: &'a mut Aggr,
 }
@@ -129,12 +120,12 @@ impl FeaturePermutation {
     }
 }
 
-pub fn train<Target: Copy>(
-    ts: &Trainset<Target>,
+pub fn train<Tgt: Copy, Tr: Trainable>(
+    ts: &Trainset<Tgt>,
     config: TrainConfig,
-    splitter: impl Splitter<Target>,
-    aggregator: &mut impl Aggregator<Target>,
-) -> DecisionTree {
+    splitter: impl Splitter<Tgt>,
+    aggregator: &mut impl Aggregator<Tgt>,
+) -> Tr {
     let space = TrainSpace::new(ts, &config.weights);
     let num_features = space.num_features();
 
@@ -152,24 +143,24 @@ pub fn train<Target: Copy>(
         features_perm: FeaturePermutation::new(num_features, rng),
         config,
         space,
-        tree: DecisionTree::new(num_features as u16),
         splitter,
         aggregator,
     };
 
-    trainer.fit();
-    trainer.tree
+    trainer.fit::<Tr>()
 }
 
-impl<'a, Target, S, Aggr> Trainer<'a, Target, S, Aggr>
+impl<'a, Tgt, Spl, Aggr> Trainer<'a, Tgt, Spl, Aggr>
 where
-    Target: Copy,
-    S: Splitter<Target>,
-    Aggr: Aggregator<Target>,
+    Tgt: Copy,
+    Spl: Splitter<Tgt>,
+    Aggr: Aggregator<Tgt>,
 {
-    pub fn fit(&mut self) {
-        let mut stack: Vec<(NodeHandle, IndexRange, usize)> =
-            vec![(self.tree.root(), 0..self.space.size(), 0); 1];
+    pub fn fit<Tr: Trainable>(&mut self) -> Tr {
+        let mut trainee = Tr::new();
+
+        let mut stack: Vec<(Tr::Handle, IndexRange, usize)> =
+            vec![(trainee.root(), 0..self.space.size(), 0); 1];
 
         while let Some((node, range, depth)) = stack.pop() {
             let split = if depth < self.config.max_depth
@@ -184,15 +175,16 @@ where
             if let Some(s) = split {
                 self.space.split(&range, s.feature, s.threshold);
                 let (left_range, right_range) = (range.start..s.pivot, s.pivot..range.end);
-                let (left_node, right_node) = self.tree.split(&node, s.feature as u16, s.threshold);
+                let (left_node, right_node) = trainee.split(&node, s.feature as u16, s.threshold);
 
                 stack.push((left_node, left_range, depth + 1));
                 stack.push((right_node, right_range, depth + 1));
             } else {
                 let value = self.aggregator.aggregate(self.space.targets(&range));
-                self.tree.set_leaf_value(&node, value);
+                trainee.set_leaf_value(&node, value);
             }
         }
+        trainee
     }
 
     fn find_best_split(&mut self, range: &IndexRange) -> Option<Split> {
@@ -207,7 +199,7 @@ where
         let mut split = Split::default();
         let mut best_impurity = f64::INFINITY;
 
-        let proto: Vec<(f32, Target, SampleWeight)> =
+        let proto: Vec<(f32, Tgt, SampleWeight)> =
             targets.iter().map(|&(t, w)| (0., t, w)).collect();
 
         self.features_perm.shake();

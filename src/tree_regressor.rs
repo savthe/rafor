@@ -1,5 +1,5 @@
 use crate::{
-    decision_tree::{self, RegressorModel},
+    decision_tree::{self, BlockTree, Predictor, RegressorModel},
     trainer_builders::*,
     FloatTarget, Trainset,
 };
@@ -23,33 +23,34 @@ use serde::{Deserialize, Serialize};
 /// use rafor::dt;
 /// let dataset = [0.7, 0.0, 0.8, 1.0, 0.7, 0.0];
 /// let targets = [1.0, 0.5, 0.2];
-/// let predictor = dt::Regressor::trainer().train(&dataset, &targets);
+/// let predictor = <dt::Regressor>::trainer().train(&dataset, &targets);
 /// let predictions = predictor.predict_batch(&dataset);
 /// println!("Predictions: {:?}", predictions);
 /// ```
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct Regressor {
-    regressor: RegressorModel,
+pub struct Regressor<P: Predictor = BlockTree> {
+    regressor: RegressorModel<P>,
 }
 
 /// Trainer for tree regressor.
 #[derive(Debug, Clone, PartialEq, Default)]
-pub struct Trainer {
+pub struct Trainer<P: Predictor> {
     pub config: decision_tree::TrainConfig,
+    _marker: std::marker::PhantomData<P>,
 }
 
-impl TrainConfigProvider for Trainer {
+impl<P: Predictor> TrainConfigProvider for Trainer<P> {
     fn train_config(&mut self) -> &mut decision_tree::TrainConfig {
         &mut self.config
     }
 }
 
-impl CommonTrainerBuilder for Trainer {}
+impl<P: Predictor> CommonTrainerBuilder for Trainer<P> {}
 //impl RegressorConfigBuilder for Trainer {}
 
-impl Trainer {
+impl<P: Predictor> Trainer<P> {
     /// Trains a regression tree with dataset given by a slice of length divisible by targets.len().
-    pub fn train(&self, data: &[f32], targets: &[FloatTarget]) -> Regressor {
+    pub fn train(&self, data: &[f32], targets: &[FloatTarget]) -> Regressor<P> {
         let trainset = Trainset::with_transposed(data, &targets);
 
         Regressor {
@@ -58,7 +59,7 @@ impl Trainer {
     }
 }
 
-impl Regressor {
+impl<P: Predictor> Regressor<P> {
     /// Predicts regression values for a set of samples.
     /// Dataset is a vector of floats with length multiple of num_features().
     pub fn predict_batch(&self, dataset: &[f32]) -> Vec<FloatTarget> {
@@ -72,8 +73,11 @@ impl Regressor {
     }
 
     /// Provides trainer for training a regressor tree.
-    pub fn trainer() -> Trainer {
-        Trainer::default()
+    pub fn trainer() -> Trainer<P> {
+        Trainer {
+            config: decision_tree::TrainConfig::default(),
+            _marker: std::marker::PhantomData::default(),
+        }
     }
 
     /// Returns a number of features for a trained tree.

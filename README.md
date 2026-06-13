@@ -78,7 +78,7 @@ fn main() {
     // Target classes.
     let targets = [1, 5, 1, -15, 5];
 
-    let predictor = Classifier::trainer()
+    let predictor: Classifier = Classifier::trainer()
         .with_max_depth(15)
         .with_trees(40)
         .with_threads(num_cpus::get())
@@ -111,9 +111,23 @@ Rafor utilizes compact trees representation under the following restrictions:
 into `u32` internally, and restored during prediction);
 5. child node index is `u32`, up to 2^32 = 4,294,967,296 nodes allowed.
 
-The decision tree is represented by a vector of internal (parent) nodes. The leaf value
-(`f32` for regression trees, `u32` index pointing to the class probabilities for classification
-trees) is bit-packed into parent's `u32` child node index.
+# Tree types
+Rafor provides flexible mechanism to use custom decision trees. A compatible tree structure
+must support trait `Predictor`. Currently there are two decision tree types available out of
+the box: `BlockTree` and `CompactTree`.
+
+## BlockTree
+This is an exceptionally fast predictor, but it requires about 4.5 times more RAM than 
+`CompactTree` in worst scenario. The tree is stored as an array of 64-byte blocks where each
+block holds a balanced tree of depth 2. This is a cache-friendly structure because prediction
+requires 3 times less jumps to traverse to leaf node. `BlockTree` is a default predictor.
+
+## CompactTree
+This is a fast predictor focusing on memory efficiency. It requires 8 bytes per tree node and
+provides very effective serialization format. The decision tree is represented by a vector of
+internal (parent) nodes. The leaf value (`f32` for regression trees, `u32` index pointing to
+the class probabilities for classification trees) is bit-packed into parent's `u32` child node
+index.
 
 
 # License

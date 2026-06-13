@@ -4,11 +4,9 @@ use std::sync::{
 };
 use std::thread;
 
-pub trait Predictor {
-    fn predict(&self, dataset: &[f32]) -> Vec<f32>;
-}
+use super::BatchPredictor;
 
-pub fn predict<P: Predictor + Sync + Send>(
+pub fn predict<P: BatchPredictor + Sync + Send>(
     predictors: &Vec<P>,
     dataset: &[f32],
     num_threads: usize,

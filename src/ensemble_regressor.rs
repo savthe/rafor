@@ -1,9 +1,9 @@
 use crate::{
-    decision_tree::{self, RegressorModel},
+    decision_tree::{self, BlockTree, Predictor, RegressorModel},
     ensemble_predictor,
     ensemble_trainer::{self, EnsembleConfig},
     trainer_builders::*,
-    FloatTarget, Trainset,
+    BatchPredictor, FloatTarget, Trainset,
 };
 use serde::{Deserialize, Serialize};
 
@@ -26,52 +26,55 @@ use serde::{Deserialize, Serialize};
 /// use rafor::rf;
 /// let dataset = [0.7, 0.0, 0.8, 1.0, 0.7, 0.0];
 /// let targets = [1.0, 0.5, 0.2];
-/// let predictor = rf::Regressor::trainer().train(&dataset, &targets);
+/// let predictor: rf::Regressor = rf::Regressor::trainer().train(&dataset, &targets);
 /// let predictions = predictor.predict_batch(&dataset, 1);
 /// println!("{:?}", predictions);
 /// ```
 #[derive(Default, Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct Regressor {
-    ensemble: Vec<RegressorModel>,
+pub struct Regressor<P: Predictor = BlockTree> {
+    ensemble: Vec<RegressorModel<P>>,
 }
 
 /// Trainer for ensemble regressor.
 #[derive(Clone, Debug, PartialEq)]
-pub struct Trainer {
+pub struct Trainer<P: Predictor> {
     config: EnsembleConfig,
+    _marker: std::marker::PhantomData<P>,
 }
 
-impl Default for Trainer {
+impl<P: Predictor> Default for Trainer<P> {
     fn default() -> Self {
         Self {
             config: EnsembleConfig::default(),
+            _marker: std::marker::PhantomData::default(),
         }
     }
 }
 
 #[derive(Clone, Default)]
-struct Trainee {
-    tree: RegressorModel,
+struct Trainee<P: Predictor> {
+    tree: RegressorModel<P>,
 }
 
-impl ensemble_trainer::Trainable<FloatTarget> for Trainee {
+impl<P: Predictor> ensemble_trainer::Trainable<FloatTarget> for Trainee<P> {
     fn fit(&mut self, ts: &Trainset<FloatTarget>, config: decision_tree::TrainConfig) {
         self.tree = RegressorModel::train(ts, &config);
     }
 }
 
-impl ensemble_predictor::Predictor for RegressorModel {
+impl<P: Predictor> BatchPredictor for RegressorModel<P> {
     fn predict(&self, dataset: &[f32]) -> Vec<f32> {
-        self.predict(dataset)
+        //self.predict(dataset)
+        Self::predict(&self, dataset)
     }
 }
 
-impl Trainer {
+impl<P: Predictor + Default + Sync + Send + Clone> Trainer<P> {
     /// Trains a random forest regressor with dataset given by a slice of length divisible by
     /// targets.len().
-    pub fn train(&self, data: &[f32], targets: &[FloatTarget]) -> Regressor {
+    pub fn train(&self, data: &[f32], targets: &[FloatTarget]) -> Regressor<P> {
         let trainset = Trainset::with_transposed(data, targets);
-        let trainee = Trainee::default();
+        let trainee: Trainee<P> = Trainee::default();
         let ens = ensemble_trainer::fit(trainee, &trainset, &self.config);
 
         Regressor {
@@ -80,7 +83,7 @@ impl Trainer {
     }
 }
 
-impl Regressor {
+impl<P: Predictor + Sync + Send> Regressor<P> {
     /// Predicts regression values for a set of samples using `num_threads` threads.
     pub fn predict_batch(&self, dataset: &[f32], num_threads: usize) -> Vec<FloatTarget> {
         ensemble_predictor::predict(&self.ensemble, dataset, num_threads)
@@ -92,22 +95,22 @@ impl Regressor {
     }
 
     /// Provides trainer for training a random forest regressor.
-    pub fn trainer() -> Trainer {
+    pub fn trainer() -> Trainer<P> {
         Trainer::default()
     }
 }
 
-impl TrainConfigProvider for Trainer {
+impl<P: Predictor> TrainConfigProvider for Trainer<P> {
     fn train_config(&mut self) -> &mut decision_tree::TrainConfig {
         &mut self.config.tree_config_proto
     }
 }
 
-impl EnsembleConfigProvider for Trainer {
+impl<P: Predictor> EnsembleConfigProvider for Trainer<P> {
     fn ensemble_config(&mut self) -> &mut EnsembleConfig {
         &mut self.config
     }
 }
 
-impl CommonTrainerBuilder for Trainer {}
-impl EnsembleTrainerBuilder for Trainer {}
+impl<P: Predictor> CommonTrainerBuilder for Trainer<P> {}
+impl<P: Predictor> EnsembleTrainerBuilder for Trainer<P> {}
