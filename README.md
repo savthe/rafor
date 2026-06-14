@@ -1,5 +1,9 @@
 **Rafor** is a performance-oriented Random Forest and Decision Trees library.
 
+<div align="center">
+<img src="benchmark.png" width="700">
+</div>div>
+
 # Classification
 Rafor provide a decision tree (DT) classifier `dt::Classifier` and a random forest (RF) classifier
 `rf::Classifier`. The class label is `i64` value. Classifiers use Gini index for
