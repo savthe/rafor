@@ -2,7 +2,7 @@
 
 <div align="center">
 <img src="benchmark.png" width="700">
-</div>div>
+</div>
 
 # Classification
 Rafor provide a decision tree (DT) classifier `dt::Classifier` and a random forest (RF) classifier
