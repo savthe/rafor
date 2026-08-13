@@ -1,8 +1,7 @@
 use crate::{
-    classify,
+    ClassDecode, ClassesMapping, Trainset, classify,
     decision_tree::{self, BlockTree, ClassifierModel, Predictor},
     trainer_builders::*,
-    ClassDecode, ClassesMapping, Trainset,
 };
 use argminmax::ArgMinMax;
 use serde::{Deserialize, Serialize};
@@ -84,7 +83,7 @@ impl<P: Predictor> Classifier<P> {
     pub fn trainer() -> Trainer<P> {
         Trainer {
             config: decision_tree::TrainConfig::default(),
-            _marker: std::marker::PhantomData::default(),
+            _marker: std::marker::PhantomData,
         }
     }
 
@@ -94,7 +93,7 @@ impl<P: Predictor> Classifier<P> {
     }
 }
 
-impl ClassDecode for Classifier {
+impl<P: Predictor> ClassDecode for Classifier<P> {
     fn get_decode_table(&self) -> &[i64] {
         self.classes_map.get_decode_table()
     }

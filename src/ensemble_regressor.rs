@@ -1,9 +1,9 @@
 use crate::{
+    BatchPredictor, FloatTarget, Trainset,
     decision_tree::{self, BlockTree, Predictor, RegressorModel},
     ensemble_predictor,
     ensemble_trainer::{self, EnsembleConfig},
     trainer_builders::*,
-    BatchPredictor, FloatTarget, Trainset,
 };
 use serde::{Deserialize, Serialize};
 
@@ -46,7 +46,7 @@ impl<P: Predictor> Default for Trainer<P> {
     fn default() -> Self {
         Self {
             config: EnsembleConfig::default(),
-            _marker: std::marker::PhantomData::default(),
+            _marker: std::marker::PhantomData,
         }
     }
 }
@@ -65,7 +65,7 @@ impl<P: Predictor> ensemble_trainer::Trainable<FloatTarget> for Trainee<P> {
 impl<P: Predictor> BatchPredictor for RegressorModel<P> {
     fn predict(&self, dataset: &[f32]) -> Vec<f32> {
         //self.predict(dataset)
-        Self::predict(&self, dataset)
+        Self::predict(self, dataset)
     }
 }
 
@@ -92,6 +92,11 @@ impl<P: Predictor + Sync + Send> Regressor<P> {
     /// Predicts regression value for a single sample given by a slice of length num_features().
     pub fn predict_one(&self, sample: &[f32]) -> FloatTarget {
         ensemble_predictor::predict(&self.ensemble, sample, 1)[0]
+    }
+
+    /// Returns a number of features for a trained tree.
+    pub fn num_features(&self) -> usize {
+        self.ensemble[0].num_features()
     }
 
     /// Provides trainer for training a random forest regressor.

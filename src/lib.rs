@@ -5,9 +5,6 @@
 //! [`rf::Classifier`]. The class label is `i64` value. Classifiers use Gini index for
 //! evaluating the split impurity.
 //!
-//! Classifiers provide method `predict` for predicting a batch of samples, it returns `Vec<i64>`
-//! with predicted class labels. Method `predict_one` returns `i64` -- a predicted class for a
-//! single sample.
 //!
 //! To get probabilities distribution, there is a method `proba` which returns a `Vec<f32>` of
 //! length `num_samples * num_classes` where `i`-th chunk of length `num_classes` contains the
@@ -46,12 +43,12 @@
 //! also the seeds for individual trees are randomly generated, because in RF by default `max_features`
 //! is less than the total number of features.
 //!
-//! `min_samples_leaf: usize`, guarantees that each leaf has at least `min_samples_leaf` nodes.
+//! `min_samples_leaf: usize`, guarantees that each leaf has at least `min_samples_leaf` samples.
 //!  Default: `1`.
 //!
 //! `min_samples_split: usize`, the minimal samples in node to consider splitting it.
 //!
-//! `sample_weights: Vec<f32>` defines the weight for each sample. If empty, each sample is weighted
+//! `weights: Vec<f32>` defines the weight for each sample. If empty, each sample is weighted
 //! with 1.0
 //!
 //! ## Ensemble parameters
@@ -67,7 +64,6 @@
 //! ```
 //! use rafor::prelude::*; // Required for .with_option builders and .num_classes().
 //! use rafor::rf::Classifier;
-//! use num_cpus; // Requires num_cpus dependency in Cargo.toml
 //!
 //! fn main() {
 //!     // Dataset for 5 samples (number of samples is defined by the number of targets).
@@ -108,7 +104,7 @@
 //! 2. feature index is `u16`, up to 2^16 = 65,536 features allowed;
 //! 3. in regression tasks, the target type is `f32`;
 //! 4. in classification tasks, the class is represented by `u32` (the input `i64` labels are mapped
-//! into `u32` internally, and restored during prediction);
+//!    into `u32` internally, and restored during prediction);
 //! 5. child node index is `u32`, up to 2^32 = 4,294,967,296 nodes allowed.
 //!
 //! # Tree types
@@ -117,7 +113,7 @@
 //! the box: `BlockTree` and `CompactTree`.
 //!
 //! ## BlockTree
-//! This is an exceptionally fast predictor, but it requires about 4.5 times more RAM than 
+//! This is an exceptionally fast predictor, but it requires about 4.5 times more RAM than
 //! CompactTree in worst scenario. The tree is stored as an array of 64-byte blocks where each
 //! block holds a balanced tree of depth 2. This is a cache-friendly structure because prediction
 //! requires 3 times less jumps to traverse to leaf node. `BlockTree` is a default predictor.
@@ -139,7 +135,7 @@ pub mod tree_classifier;
 pub mod tree_regressor;
 use argminmax::ArgMinMax;
 use classes_mapping::{ClassDecode, ClassesMapping};
-pub use decision_tree::{BlockTree, CompactTree, Predictor, Trainable, Resolve, MaxFeaturesPolicy};
+pub use decision_tree::{BlockTree, CompactTree, MaxFeaturesPolicy, Predictor, Resolve, Trainable};
 
 type ClassTarget = u32;
 type FloatTarget = f32;
@@ -148,9 +144,9 @@ type SampleWeight = f32;
 type IndexRange = std::ops::Range<usize>;
 
 pub mod prelude {
+    pub use crate::MaxFeaturesPolicy;
     pub use crate::classes_mapping::ClassDecode;
     pub use crate::trainer_builders::{CommonTrainerBuilder, EnsembleTrainerBuilder};
-    pub use crate::MaxFeaturesPolicy;
 }
 
 pub mod dt {
@@ -166,7 +162,7 @@ pub mod rf {
 }
 
 fn classify(proba: &[f32], mapping: &ClassesMapping) -> Vec<i64> {
-    assert!(proba.len() % mapping.num_classes() == 0);
+    assert!(proba.len().is_multiple_of(mapping.num_classes()));
     proba
         .chunks(mapping.num_classes())
         .map(|c| mapping.decode(c.argmax()))
@@ -182,7 +178,7 @@ struct Trainset<'a, T> {
 
 impl<'a, T> Trainset<'a, T> {
     pub fn with_transposed(data: &[f32], targets: &'a [T]) -> Self {
-        assert!(data.len() % targets.len() == 0);
+        assert!(data.len().is_multiple_of(targets.len()));
         let num_features = data.len() / targets.len();
 
         let mut res: Vec<f32> = Vec::with_capacity(data.len());
@@ -202,7 +198,7 @@ impl<'a, T> Trainset<'a, T> {
     }
 }
 
-pub trait BatchPredictor {
+pub(crate) trait BatchPredictor {
     fn predict(&self, dataset: &[f32]) -> Vec<f32>;
 }
 
