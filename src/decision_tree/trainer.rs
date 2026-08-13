@@ -1,7 +1,6 @@
-use super::{splitter::Splitter, Trainable};
+use super::{Trainable, splitter::Splitter};
 use crate::{IndexRange, SampleWeight, Trainset};
-use radsort;
-use rand::{rngs::SmallRng, seq::SliceRandom, SeedableRng};
+use rand::{SeedableRng, rngs::SmallRng, seq::SliceRandom};
 
 #[derive(Default)]
 struct Split {
@@ -188,8 +187,8 @@ where
     }
 
     fn find_best_split(&mut self, range: &IndexRange) -> Option<Split> {
-        let targets = self.space.targets(&range);
-        let samples = self.space.samples(&range);
+        let targets = self.space.targets(range);
+        let samples = self.space.samples(range);
 
         // Splitter returns false if the range is pure.
         if !self.splitter.prepare(targets) {
@@ -260,7 +259,7 @@ impl<'a, T: Copy> TrainSpace<'a, T> {
 
     #[inline(always)]
     pub fn targets(&self, range: &IndexRange) -> &[(T, SampleWeight)] {
-        &&self.targets[range.clone()]
+        &self.targets[range.clone()]
     }
 
     #[inline(always)]

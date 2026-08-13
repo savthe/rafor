@@ -37,8 +37,7 @@ impl ImpurityMetric<ClassTarget> for Gini {
     #[inline(always)]
     fn pop(&mut self, bin_index: ClassTarget, weight: SampleWeight) {
         let weight = weight as f64;
-        self.sum_squares =
-            self.sum_squares + weight * (weight - 2. * self.bins[bin_index as usize]);
+        self.sum_squares += weight * (weight - 2. * self.bins[bin_index as usize]);
         self.bins[bin_index as usize] -= weight;
         self.total_weight -= weight;
     }
@@ -51,9 +50,8 @@ impl ImpurityMetric<ClassTarget> for Gini {
 
     #[inline(always)]
     fn split_impurity(&self, other: &Self) -> f64 {
-        1.0 - (self.sum_squares * other.total_weight + other.sum_squares * self.total_weight) as f64
+        1.0 - (self.sum_squares * other.total_weight + other.sum_squares * self.total_weight)
             / (self.total_weight * other.total_weight * (self.total_weight + other.total_weight))
-                as f64
     }
 }
 
@@ -73,9 +71,8 @@ impl ImpurityMetric<f32> for Mse {
         let weight = weight as f64;
         let y = y as f64;
 
-        let next_mean =
-            self.mean + weight as f64 * (y - self.mean) / (self.total_weight + weight) as f64;
-        self.sum_squares += weight as f64 * (y - self.mean) * (y - next_mean);
+        let next_mean = self.mean + weight * (y - self.mean) / (self.total_weight + weight);
+        self.sum_squares += weight * (y - self.mean) * (y - next_mean);
         self.mean = next_mean;
         self.total_weight += weight;
     }
@@ -85,9 +82,8 @@ impl ImpurityMetric<f32> for Mse {
         let weight = weight as f64;
         let y = y as f64;
 
-        let next_mean =
-            y + self.total_weight * (self.mean - y) / (self.total_weight - weight) as f64;
-        self.sum_squares -= weight as f64 * (y - next_mean) * (y - self.mean);
+        let next_mean = y + self.total_weight * (self.mean - y) / (self.total_weight - weight);
+        self.sum_squares -= weight * (y - next_mean) * (y - self.mean);
         self.mean = next_mean;
         self.total_weight -= weight;
     }

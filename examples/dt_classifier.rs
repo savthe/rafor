@@ -5,14 +5,14 @@ fn main() {
     // We have 5 samples with 3 classes.
     #[rustfmt::skip]
     let dataset = [
-        0.7, 0.0, 
-        0.8, 1.0, 
+        0.7, 0.0,
+        0.8, 1.0,
         0.3, 0.0,
         1.0, 1.3,
         0.4, 2.1
     ];
     let targets = [1, 5, 1, -15, 5];
-    let predictor = Classifier::trainer()
+    let predictor: Classifier = Classifier::trainer()
         .with_max_depth(15)
         .train(&dataset, &targets);
 

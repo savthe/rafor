@@ -1,4 +1,4 @@
-use super::{splitter::GiniSplitter, trainer, Predictor, TrainConfig};
+use super::{Predictor, TrainConfig, splitter::GiniSplitter, trainer};
 
 use crate::{ClassTarget, SampleWeight, Trainset};
 
@@ -20,7 +20,7 @@ struct ProbabilityAggregator {
 
 impl<P: Predictor> ClassifierModel<P> {
     pub fn predict(&self, dataset: &[f32]) -> Vec<f32> {
-        assert!(dataset.len() % self.num_features == 0);
+        assert!(dataset.len().is_multiple_of(self.num_features));
         let num_samples = dataset.len() / self.num_features;
         let mut result = vec![0.; num_samples * self.num_classes];
 
@@ -77,7 +77,7 @@ impl ProbabilityAggregator {
 
 impl trainer::Aggregator<ClassTarget> for ProbabilityAggregator {
     fn aggregate(&mut self, leaf_items: &[(ClassTarget, SampleWeight)]) -> u32 {
-        let mut bins = vec![0. as f64; self.num_classes];
+        let mut bins = vec![0.; self.num_classes];
         let mut total_weight: f64 = 0.;
         for &(x, w) in leaf_items.iter() {
             bins[x as usize] += w as f64;

@@ -1,10 +1,12 @@
+use std::marker::PhantomData;
+
 use crate::{
+    BatchPredictor, ClassDecode, ClassTarget, ClassesMapping, MaxFeaturesPolicy, Trainset,
     classify, decision_tree,
     decision_tree::{BlockTree, ClassifierModel, Predictor},
     ensemble_predictor,
     ensemble_trainer::{self, EnsembleConfig},
     trainer_builders::*,
-    BatchPredictor, ClassDecode, ClassTarget, ClassesMapping, MaxFeaturesPolicy, Trainset,
 };
 use serde::{Deserialize, Serialize};
 /// A random forest classifier.
@@ -41,7 +43,7 @@ pub struct Classifier<P: Predictor = BlockTree> {
 #[derive(Clone, PartialEq, Debug)]
 pub struct Trainer<P: Predictor> {
     pub config: EnsembleConfig,
-    _marker: std::marker::PhantomData<P>,
+    _marker: PhantomData<P>,
 }
 
 impl<P: Predictor> Default for Trainer<P> {
@@ -50,7 +52,7 @@ impl<P: Predictor> Default for Trainer<P> {
         config.tree_config_proto.max_features = MaxFeaturesPolicy::SQRT;
         Self {
             config,
-            _marker: std::marker::PhantomData::default(),
+            _marker: PhantomData,
         }
     }
 }

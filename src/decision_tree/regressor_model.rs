@@ -1,4 +1,4 @@
-use super::{splitter::MseSplitter, trainer, Predictor, TrainConfig};
+use super::{Predictor, TrainConfig, splitter::MseSplitter, trainer};
 
 use crate::{FloatTarget, SampleWeight, Trainset};
 
@@ -15,7 +15,7 @@ struct Aggregator {}
 
 impl<P: Predictor> RegressorModel<P> {
     pub fn predict(&self, dataset: &[f32]) -> Vec<f32> {
-        assert!(dataset.len() % self.num_features == 0);
+        assert!(dataset.len().is_multiple_of(self.num_features));
         dataset
             .chunks_exact(self.num_features)
             .map(|s| self.predict_one(s))

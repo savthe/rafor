@@ -166,12 +166,10 @@ impl Resolve for BlockTree {
                 } else {
                     process_term!(4);
                 }
+            } else if b.compare(2, sample) {
+                process_term!(5);
             } else {
-                if b.compare(2, sample) {
-                    process_term!(5);
-                } else {
-                    process_term!(6);
-                }
+                process_term!(6);
             }
         }
     }

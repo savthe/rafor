@@ -1,20 +1,20 @@
 use std::sync::{
-    atomic::{AtomicUsize, Ordering},
     Arc,
+    atomic::{AtomicUsize, Ordering},
 };
 use std::thread;
 
 use super::BatchPredictor;
 
 pub fn predict<P: BatchPredictor + Sync + Send>(
-    predictors: &Vec<P>,
+    predictors: &[P],
     dataset: &[f32],
     num_threads: usize,
 ) -> Vec<f32> {
     let mut result: Vec<f32> = Vec::new();
     if num_threads == 1 {
         for p in predictors.iter() {
-            result.aggregate(&p.predict(&dataset));
+            result.aggregate(&p.predict(dataset));
         }
     } else {
         let task_id = Arc::new(AtomicUsize::new(0));
@@ -26,7 +26,7 @@ pub fn predict<P: BatchPredictor + Sync + Send>(
                     loop {
                         let id = task_id.fetch_add(1, Ordering::Relaxed);
                         if id < predictors.len() {
-                            thread_result.aggregate(&predictors[id].predict(&dataset));
+                            thread_result.aggregate(&predictors[id].predict(dataset));
                         } else {
                             break;
                         }

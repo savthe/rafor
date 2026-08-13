@@ -90,8 +90,10 @@ fn find_split<T: Copy, I: ImpurityMetric<T>>(
     upper_imp: f64,
     min_samples_leaf: usize,
 ) -> Position {
-    let mut split = Position::default();
-    split.impurity = upper_imp;
+    let mut split = Position {
+        impurity: upper_imp,
+        ..Default::default()
+    };
     for i in 0..data.len() - min_samples_leaf {
         let &(value, target, weight) = &data[i];
         left.push(target, weight);

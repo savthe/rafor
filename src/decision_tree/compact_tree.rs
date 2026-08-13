@@ -5,9 +5,9 @@ use super::{Resolve, Trainable};
 
 #[derive(Clone, Debug, PartialEq)]
 enum Child {
-    LEFT,
-    RIGHT,
-    ROOT,
+    Left,
+    Right,
+    Root,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -192,7 +192,7 @@ impl Resolve for CompactTree {
             }
         }
 
-        id as u32
+        id
     }
 }
 
@@ -206,7 +206,7 @@ impl Trainable for CompactTree {
         assert!(self.nodes.is_empty());
         Handle {
             parent: 0,
-            child: Child::ROOT,
+            child: Child::Root,
         }
     }
 
@@ -224,11 +224,11 @@ impl Trainable for CompactTree {
 
         let parent = &mut self.nodes[handle.parent as usize];
         match handle.child {
-            Child::LEFT => {
+            Child::Left => {
                 parent.left = new_index;
                 parent.left_is_leaf = false;
             }
-            Child::RIGHT => {
+            Child::Right => {
                 parent.right = new_index;
                 parent.right_is_leaf = false;
             }
@@ -237,24 +237,24 @@ impl Trainable for CompactTree {
 
         let left_handle = Handle {
             parent: new_index,
-            child: Child::LEFT,
+            child: Child::Left,
         };
         let right_handle = Handle {
             parent: new_index,
-            child: Child::RIGHT,
+            child: Child::Right,
         };
         (left_handle, right_handle)
     }
 
     fn set_leaf_value(&mut self, handle: &Handle, value: u32) {
         match handle.child {
-            Child::LEFT => {
+            Child::Left => {
                 self.nodes[handle.parent as usize].left = value;
             }
-            Child::RIGHT => {
+            Child::Right => {
                 self.nodes[handle.parent as usize].right = value;
             }
-            Child::ROOT => {
+            Child::Root => {
                 // If tree has only one node (a leaf), make single internal node with identical
                 // leaves.
                 let root = InternalNode {

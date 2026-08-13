@@ -1,7 +1,7 @@
 use crate::{
+    FloatTarget, Trainset,
     decision_tree::{self, BlockTree, Predictor, RegressorModel},
     trainer_builders::*,
-    FloatTarget, Trainset,
 };
 
 use serde::{Deserialize, Serialize};
@@ -51,7 +51,7 @@ impl<P: Predictor> CommonTrainerBuilder for Trainer<P> {}
 impl<P: Predictor> Trainer<P> {
     /// Trains a regression tree with dataset given by a slice of length divisible by targets.len().
     pub fn train(&self, data: &[f32], targets: &[FloatTarget]) -> Regressor<P> {
-        let trainset = Trainset::with_transposed(data, &targets);
+        let trainset = Trainset::with_transposed(data, targets);
 
         Regressor {
             regressor: RegressorModel::train(&trainset, &self.config),
@@ -76,7 +76,7 @@ impl<P: Predictor> Regressor<P> {
     pub fn trainer() -> Trainer<P> {
         Trainer {
             config: decision_tree::TrainConfig::default(),
-            _marker: std::marker::PhantomData::default(),
+            _marker: std::marker::PhantomData,
         }
     }
 

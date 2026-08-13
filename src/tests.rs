@@ -1,4 +1,4 @@
-use crate::{dt, prelude::*, rf, BlockTree, CompactTree};
+use crate::{BlockTree, CompactTree, dt, prelude::*, rf};
 use std::{fs::read_to_string, str::FromStr};
 
 const MAX_THREADS: usize = 8;
@@ -103,8 +103,7 @@ fn f1score(pred: &[i64], target: &[i64]) -> f64 {
         .count();
     let precision = tp as f64 / (tp as f64 + fp as f64);
     let recall = tp as f64 / (tp as f64 + fnn as f64);
-    let f1 = 2. * precision * recall / (precision + recall);
-    f1
+    2. * precision * recall / (precision + recall)
 }
 
 #[test]
@@ -170,17 +169,15 @@ fn random_forest_regressor_depth10() {
 
 fn mean_squared_error(v: &[f32], u: &[f32]) -> f64 {
     assert!(v.len() == u.len());
-    let mse = v
-        .iter()
+    v.iter()
         .zip(u.iter())
         .map(|(&x, &y)| (x - y) as f64 * (x - y) as f64)
         .sum::<f64>()
-        / v.len() as f64;
-    mse
+        / v.len() as f64
 }
 
 fn split_dataset<T: Copy>(x: &[f32], y: &[T]) -> (Vec<f32>, Vec<T>, Vec<f32>, Vec<T>) {
-    assert!(x.len() % y.len() == 0);
+    assert!(x.len().is_multiple_of(y.len()));
     let features = x.len() / y.len();
 
     let x_train: Vec<f32> = x
