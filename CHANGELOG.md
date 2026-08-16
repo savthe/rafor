@@ -1,4 +1,18 @@
 # Changelog
+## v0.4.0
+* Introduced a pluggable decision tree representation via the new `Predictor` trait. `Classifier`
+and `Regressor` types (both tree and random forest) are now generic over `P: Predictor`.
+* Added `BlockTree`, a new cache-friendly predictor storing 7-node balanced blocks aligned to
+64 bytes. It provides exceptionally fast inference (up to 3x fewer jumps per prediction) at the
+cost of using up to ~4.5 times more memory than `CompactTree` in the worst case. `BlockTree` is
+now the default predictor.
+* Renamed the previous fixed decision tree implementation to `CompactTree`. It remains a
+memory-efficient predictor (8 bytes per node) and now uses an improved, more compact
+serialization format based on BFS node packing.
+* Renamed `predict()` to `predict_batch()` on `Classifier` and `Regressor` (both tree and random
+forest variants) to better reflect batch prediction semantics.
+* Minor code cleanups and clippy fixes.
+
 ## v0.3.0
 * Improved training interface. Training config is removed. Instead, each model provides
 `::trainer()` method that constructs `Model::Trainer` object, acting as a builder for setting
