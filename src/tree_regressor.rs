@@ -11,11 +11,11 @@ use serde::{Deserialize, Serialize};
 /// The [Trainer] implements [CommonTrainerBuilder]. Default training parameters:
 /// ```text
 /// max_depth: usize::MAX,
-/// max_features: NumFeatures::NUMBER(usize::MAX),
+/// max_features: MaxFeaturesPolicy::NUMBER(usize::MAX),
 /// seed: 42,
 /// min_samples_leaf: 1,
 /// min_samples_split: 2,
-/// sample_weights: empty (1.0 for each sample)
+/// weights: empty (1.0 for each sample)
 ///```
 ///
 /// # Example
@@ -46,7 +46,6 @@ impl<P: Predictor> TrainConfigProvider for Trainer<P> {
 }
 
 impl<P: Predictor> CommonTrainerBuilder for Trainer<P> {}
-//impl RegressorConfigBuilder for Trainer {}
 
 impl<P: Predictor> Trainer<P> {
     /// Trains a regression tree with dataset given by a slice of length divisible by targets.len().

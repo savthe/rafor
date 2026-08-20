@@ -12,11 +12,11 @@ use serde::{Deserialize, Serialize};
 /// parameters:
 /// ```text
 /// max_depth: usize::MAX,
-/// max_features: NumFeatures::NUMBER(usize::MAX),
+/// max_features: MaxFeaturesPolicy::NUMBER(usize::MAX),
 /// seed: 42,
 /// min_samples_leaf: 1,
 /// min_samples_split: 2,
-/// sample_weights: empty (1.0 for each sample)
+/// weights: empty (1.0 for each sample)
 ///```
 ///
 /// # Examples

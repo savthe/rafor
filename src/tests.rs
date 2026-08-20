@@ -3,7 +3,7 @@ use std::{fs::read_to_string, str::FromStr};
 
 const MAX_THREADS: usize = 8;
 
-/// The values for comparison are computed using scikit-learn using python_tests/tests.py script.
+/// The values for comparison are computed with scikit-learn via the python_tests/tests.py script.
 #[test]
 fn classifier_tree_overfit_self() {
     let (samples, targets) = load_dataset::<i64>("datasets/winequality-red.csv", ";", true);

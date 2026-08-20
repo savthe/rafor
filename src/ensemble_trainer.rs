@@ -10,16 +10,17 @@ use std::{
     thread,
 };
 
-// Configuration for training the ensembles of trees.
+/// Configuration for training ensembles of trees.
 #[derive(Clone, PartialEq, Debug)]
 pub struct EnsembleConfig {
+    /// Configuration of an individual tree in the ensemble.
     pub tree_config_proto: decision_tree::TrainConfig,
 
     /// Number of decision trees in ensemble.
     pub num_trees: usize,
 
     /// Number of threads to use. Please note that there is no specific value for "use all cores".
-    /// Maximun number of theads can be obtained useing, for instance, crate `num_cpus`.
+    /// The maximum number of threads can be obtained using, for instance, the crate `num_cpus`.
     pub num_threads: usize,
 }
 

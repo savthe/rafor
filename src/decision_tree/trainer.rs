@@ -16,7 +16,7 @@ pub enum MaxFeaturesPolicy {
     SQRT,
     /// Takes `log2(total_features)`.
     LOG,
-    /// Sets the exact number.
+    /// Takes the given number of features, but no more than the total number of features.
     NUMBER(usize),
 }
 
@@ -34,16 +34,17 @@ pub struct TrainConfig {
     /// Maximum number of features to use in each split. If `max_features` is less than the total
     /// number of features, each split uses a random subset of at most `max_features` features.
     ///
-    /// **Note**. If trainer is unable find a splitting value in `num_features` features, it will
-    /// consider additional features.
+    /// **Note**. If no split is found within the considered features, additional features will be
+    /// considered until a split is found or all features are used.
     pub max_features: MaxFeaturesPolicy,
 
-    /// Minimal number of samples in the node that can be splitted.
+    /// Minimal number of samples in the node that can be split.
     pub min_samples_split: usize,
 
     /// Forces leaves to have at least min_samples_leaf samples.
     pub min_samples_leaf: usize,
 
+    /// Sample weights, one value per sample. Empty means weight `1.0` for each sample.
     pub weights: Vec<SampleWeight>,
 }
 

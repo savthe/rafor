@@ -74,7 +74,7 @@ impl From<CompactTree> for PackedTree {
                 packed.left_leaves_mask.push(node.left_is_leaf);
                 packed.right_leaves_mask.push(node.right_is_leaf);
 
-                // If node is a leaf, store its payload as leaf data, else is is a child index.
+                // If node is a leaf, store its payload as leaf data, else it is a child index.
                 if node.left_is_leaf {
                     packed.leaves.push(node.left);
                 } else {

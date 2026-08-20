@@ -40,7 +40,7 @@ pub struct BlockTree {
 pub struct Handle {
     // Index of a block.
     block: usize,
-    // Index of a node withing block.
+    // Index of a node within a block.
     node: usize,
 }
 

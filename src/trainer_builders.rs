@@ -35,7 +35,7 @@ pub trait CommonTrainerBuilder: TrainConfigProvider {
         self
     }
 
-    /// Sets sample weights (`sample_weights`).
+    /// Sets sample weights (`weights`).
     fn with_weights(&mut self, weights: &[f32]) -> &mut Self {
         self.train_config().weights = weights.to_vec();
         self

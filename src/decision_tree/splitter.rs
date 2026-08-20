@@ -9,8 +9,8 @@ pub struct Position {
 }
 
 pub trait Splitter<T> {
-    // Calls before series of find_split calls for given samples range, but with different feature
-    // orderings. Returns true if given range is not pure.
+    // Called before a series of find_split calls for a given samples range, but with different
+    // feature orderings. Returns true if the given range is not pure.
     fn prepare(&mut self, targets: &[(T, SampleWeight)]) -> bool;
 
     // Finds split point with impurity lower than upper_impurity. Data is a slice of pairs of some

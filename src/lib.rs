@@ -1,7 +1,7 @@
 //! A fast decision trees and random forest implementation.
 //!
 //! # Classification
-//! Rafor provide a decision tree (DT) classifier [`dt::Classifier`] and a random forest (RF) classifier
+//! Rafor provides a decision tree (DT) classifier [`dt::Classifier`] and a random forest (RF) classifier
 //! [`rf::Classifier`]. The class label is `i64` value. Classifiers use Gini index for
 //! evaluating the split impurity.
 //!
@@ -34,19 +34,18 @@
 //! `max_depth: usize` defines the maximal tree depth.
 //!
 //! `max_features`: [MaxFeaturesPolicy], the maximal number of features that are considered when finding
-//! best split value for decision tree node. Note that if no split value found, additional features
-//! will be considered until split is found or all features used.
+//! best split value for decision tree node. Note that if no split value is found, additional
+//! features will be considered until a split is found or all features are used.
 //!
 //! `seed: u64`, defines the seed for random number generator. For trees the random numbers are
-//! used for generating the feature sequence when finding split when `max_features` is less than the
-//! number of all features of training dataset. In RF, the datasets are generated using random sampling,
-//! also the seeds for individual trees are randomly generated, because in RF by default `max_features`
-//! is less than the total number of features.
+//! used for generating the feature sequence when finding a split if `max_features` is less than the
+//! number of all features of the training dataset. In RF, datasets are generated using random
+//! sampling (bootstrapping), and the seeds for individual trees are derived from the base `seed`.
 //!
 //! `min_samples_leaf: usize`, guarantees that each leaf has at least `min_samples_leaf` samples.
 //!  Default: `1`.
 //!
-//! `min_samples_split: usize`, the minimal samples in node to consider splitting it.
+//! `min_samples_split: usize`, the minimal number of samples in a node to consider splitting it.
 //!
 //! `weights: Vec<f32>` defines the weight for each sample. If empty, each sample is weighted
 //! with 1.0
@@ -62,7 +61,7 @@
 //!
 //! # Example
 //! ```
-//! use rafor::prelude::*; // Required for .with_option builders and .num_classes().
+//! use rafor::prelude::*; // Required for the `.with_*` builder methods and `.num_classes()`.
 //! use rafor::rf::Classifier;
 //!
 //! fn main() {
@@ -99,7 +98,7 @@
 //! ```
 //!
 //! # Space / performance considerations
-//! Rafor utilizes compact trees representation under the following restrictions:
+//! Rafor utilizes a compact tree representation under the following restrictions:
 //! 1. split threshold is `f32`;
 //! 2. feature index is `u16`, up to 2^16 = 65,536 features allowed;
 //! 3. in regression tasks, the target type is `f32`;
@@ -108,7 +107,7 @@
 //! 5. child node index is `u32`, up to 2^32 = 4,294,967,296 nodes allowed.
 //!
 //! # Tree types
-//! Rafor provides flexible mechanism to use custom decision trees. A compatible tree structure
+//! Rafor provides a flexible mechanism to use custom decision trees. A compatible tree structure
 //! must support trait `Predictor`. Currently there are two decision tree types available out of
 //! the box: `BlockTree` and `CompactTree`.
 //!

@@ -29,7 +29,7 @@ pub trait ClassDecode {
     /// Returns a decode table of length num_classes().
     fn get_decode_table(&self) -> &[i64];
 
-    /// Returns a number of classes stored int table.
+    /// Returns the number of classes stored in the table.
     #[inline(always)]
     fn num_classes(&self) -> usize {
         self.get_decode_table().len()
