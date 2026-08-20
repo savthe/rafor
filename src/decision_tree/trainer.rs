@@ -31,9 +31,8 @@ pub struct TrainConfig {
     /// splits.
     pub seed: u64,
 
-    /// Maximum number of features to use in each split. If `max_features` is less than total
-    /// amount of features, at each split will be used a random subset of features with size at
-    /// least `num_features`.
+    /// Maximum number of features to use in each split. If `max_features` is less than the total
+    /// number of features, each split uses a random subset of at most `max_features` features.
     ///
     /// **Note**. If trainer is unable find a splitting value in `num_features` features, it will
     /// consider additional features.

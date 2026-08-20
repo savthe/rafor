@@ -9,9 +9,9 @@ Rafor provide a decision tree (DT) classifier `dt::Classifier` and a random fore
 `rf::Classifier`. The class label is `i64` value. Classifiers use Gini index for
 evaluating the split impurity.
 
-Classifiers provide method `predict` for predicting a batch of samples, it returns `Vec<i64>`
-with predicted class labels. Method `predict_one` returns `i64` -- a predicted class for a
-single sample.
+Classifiers provide method `predict_batch` for predicting a batch of samples; it returns
+`Vec<i64>` with predicted class labels. Method `predict_one` returns `i64` -- a predicted class
+for a single sample.
 
 To get probabilities distribution, there is a method `proba` which returns a `Vec<f32>` of
 length `num_samples * num_classes` where `i`-th chunk of length `num_classes` contains the
@@ -25,8 +25,8 @@ the split impurity.
 # Dataset
 Multiple samples for inference or training are provided as a single `f32` slice, where each chunk of
 the size of feature space (`num_features`) is treated as a feature vector of a single sample.
-During training, `num_features` is derieved as a length of the `f32` input vector of samples
-deviced by the number of proviced targets.
+During training, `num_features` is derived by dividing the length of the input `f32` slice by
+the number of provided targets.
 
 # Model training
 All models provide method `trainer()` which returns a `Trainer` object for particular model. The
@@ -50,7 +50,7 @@ number of all features of training dataset. In RF, the datasets are generated us
 also the seeds for individual trees are randomly generated, because in RF by default `max_features`
 is less than the total number of features.
 
-`min_samples_leaf: usize`, guarantees that each leaf has at least `min_samples_leaf` nodes.
+`min_samples_leaf: usize`, guarantees that each leaf has at least `min_samples_leaf` samples.
  Default: `1`.
 
 `min_samples_split: usize`, the minimal samples in node to consider splitting it.
@@ -90,7 +90,7 @@ fn main() {
         .train(&dataset, &targets);
 
     // Get predictions for same dataset.
-    let predictions = predictor.predict(&dataset, num_cpus::get());
+    let predictions = predictor.predict_batch(&dataset, num_cpus::get());
     println!("Predictions: {:?}", predictions);
 
     // Now let's get probability distributions for each class. Use all CPU cores.
@@ -121,17 +121,19 @@ must support trait `Predictor`. Currently there are two decision tree types avai
 the box: `BlockTree` and `CompactTree`.
 
 ## BlockTree
-This is an exceptionally fast predictor, but it requires about 4.5 times more RAM than 
-`CompactTree` in worst scenario. The tree is stored as an array of 64-byte blocks where each
-block holds a balanced tree of depth 2. This is a cache-friendly structure because prediction
-requires 3 times less jumps to traverse to leaf node. `BlockTree` is a default predictor.
+This is an exceptionally fast predictor, but it requires more RAM than `CompactTree` (about
+4.5 times more in the worst case). The tree is stored as an array of 64-byte blocks; each block
+holds a balanced subtree of depth 2, i.e. 3 decision levels (splits) packed into a single cache
+line. A *memory jump* means a distinct cache-line access, so resolving a path needs ~3 splits
+per jump instead of 1 - which yields up to 3x fewer memory jumps per prediction than
+`CompactTree`. `BlockTree` is the default predictor.
 
 ## CompactTree
-This is a fast predictor focusing on memory efficiency. It requires 8 bytes per tree node and
-provides very effective serialization format. The decision tree is represented by a vector of
-internal (parent) nodes. The leaf value (`f32` for regression trees, `u32` index pointing to
-the class probabilities for classification trees) is bit-packed into parent's `u32` child node
-index.
+This is a fast predictor focusing on memory efficiency. Memory scales as 8 bytes per tree node
+on average: only internal (parent) nodes are stored, and each node reserves a `u32` per child -
+either a child index or, for a leaf child, the encoded leaf value (`f32` for regression trees,
+`u32` index into the class-probability table for classification trees). Because leaves occupy no
+dedicated storage, roughly half of all vertices cost nothing. Classification trees additionally store a per-leaf class-probability table. `CompactTree` also provides a compact, bit-packed serialization format.
 
 
 # License

@@ -18,8 +18,8 @@
 //! # Dataset
 //! Multiple samples for inference or training are provided as a single `f32` slice, where each chunk of
 //! the size of feature space (`num_features`) is treated as a feature vector of a single sample.
-//! During training, `num_features` is derieved as a length of the `f32` input vector of samples
-//! deviced by the number of proviced targets.
+//! During training, `num_features` is derived by dividing the length of the input `f32` slice by
+//! the number of provided targets.
 //!
 //! # Model training
 //! All models provide method `trainer()` which returns a `Trainer` object for particular model. The
@@ -113,17 +113,21 @@
 //! the box: `BlockTree` and `CompactTree`.
 //!
 //! ## BlockTree
-//! This is an exceptionally fast predictor, but it requires about 4.5 times more RAM than
-//! CompactTree in worst scenario. The tree is stored as an array of 64-byte blocks where each
-//! block holds a balanced tree of depth 2. This is a cache-friendly structure because prediction
-//! requires 3 times less jumps to traverse to leaf node. `BlockTree` is a default predictor.
+//! This is an exceptionally fast predictor, but it requires more RAM than `CompactTree` (about
+//! 4.5 times more in the worst case). The tree is stored as an array of 64-byte blocks; each
+//! block holds a balanced subtree of depth 2, i.e. 3 decision levels (splits) packed into a single
+//! cache line. A *memory jump* means a distinct cache-line access, so resolving a path needs ~3
+//! splits per jump instead of 1 - which yields up to 3x fewer memory jumps per prediction than
+//! `CompactTree`. `BlockTree` is the default predictor.
 //!
 //! ## CompactTree
-//! This is a fast predictor focusing on memory efficiency. It requires 8 bytes per tree node and
-//! provides very effective serialization format. The decision tree is represented by a vector of
-//! internal (parent) nodes. The leaf value (`f32` for regression trees, `u32` index pointing to
-//! the class probabilities for classification trees) is bit-packed into parent's `u32` child node
-//! index.
+//! This is a fast predictor focusing on memory efficiency. Memory scales as 8 bytes per tree node
+//! on average: only internal (parent) nodes are stored, and each node reserves a `u32` per child -
+//! either a child index or, for a leaf child, the encoded leaf value (`f32` for regression trees,
+//! `u32` index into the class-probability table for classification trees). Because leaves occupy
+//! no dedicated storage, roughly half of all vertices cost nothing. Classification trees
+//! additionally store a per-leaf class-probability table. `CompactTree` also provides a compact,
+//! bit-packed serialization format.
 mod classes_mapping;
 mod decision_tree;
 pub mod ensemble_classifier;
