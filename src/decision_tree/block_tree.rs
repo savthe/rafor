@@ -107,15 +107,12 @@ impl Trainable for BlockTree {
         block.values[i] = value;
 
         // Propagate current leaf value to lower nodes.
-        if i == 0 {
+        if i == 0 || i == 1 {
             block.values[3] = value;
             block.values[4] = value;
-            block.values[5] = value;
-            block.values[6] = value;
-        } else if i == 1 {
-            block.values[3] = value;
-            block.values[4] = value;
-        } else if i == 2 {
+        }
+
+        if i == 0 || i == 2 {
             block.values[5] = value;
             block.values[6] = value;
         }
