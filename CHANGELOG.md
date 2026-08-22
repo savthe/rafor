@@ -1,4 +1,7 @@
 # Changelog
+## v0.4.1
+* Minor refactoring and documentation improvements. Leaf values propagation cleaned up.
+
 ## v0.4.0
 * Introduced a pluggable decision tree representation via the new `Predictor` trait. `Classifier`
 and `Regressor` types (both tree and random forest) are now generic over `P: Predictor`.

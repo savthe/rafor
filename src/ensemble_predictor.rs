@@ -50,13 +50,13 @@ pub fn predict<P: BatchPredictor + Sync + Send>(
 }
 
 pub trait Aggregate {
-    fn aggregate(&mut self, other: &Vec<f32>);
+    fn aggregate(&mut self, other: &[f32]);
 }
 
 impl Aggregate for Vec<f32> {
-    fn aggregate(&mut self, other: &Vec<f32>) {
+    fn aggregate(&mut self, other: &[f32]) {
         if self.is_empty() {
-            *self = other.clone();
+            *self = other.to_vec();
         } else {
             assert!(other.is_empty() || self.len() == other.len());
             for (s, x) in self.iter_mut().zip(other.iter()) {

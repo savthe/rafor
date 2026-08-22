@@ -1,5 +1,5 @@
-use std::fs::File;
 use rafor::rf::Classifier;
+use std::fs::File;
 
 fn main() {
     let dataset = [0.7, 0.0, 0.8, 1.0, 0.7, 0.0];

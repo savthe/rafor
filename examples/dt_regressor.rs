@@ -1,5 +1,5 @@
 use rafor::dt::Regressor;
-use rafor::{prelude::*, CompactTree}; // Required to use .with_option builders.
+use rafor::{CompactTree, prelude::*}; // Required to use .with_option builders.
 
 fn main() {
     // 5 samples with 2 features each.

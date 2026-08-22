@@ -1,12 +1,11 @@
 use crate::{
-    decision_tree,
+    SampleWeight, Trainset, decision_tree,
     trainer_builders::{CommonTrainerBuilder, TrainConfigProvider},
-    SampleWeight, Trainset,
 };
-use rand::{rngs::SmallRng, Rng, SeedableRng};
+use rand::{Rng, SeedableRng, rngs::SmallRng};
 use std::{
-    sync::atomic::{AtomicUsize, Ordering},
     sync::Arc,
+    sync::atomic::{AtomicUsize, Ordering},
     thread,
 };
 

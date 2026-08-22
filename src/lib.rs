@@ -64,36 +64,34 @@
 //! use rafor::prelude::*; // Required for the `.with_*` builder methods and `.num_classes()`.
 //! use rafor::rf::Classifier;
 //!
-//! fn main() {
-//!     // Dataset for 5 samples (number of samples is defined by the number of targets).
-//!     let dataset = [
-//!         0.7, 0.0,
-//!         0.8, 1.0,
-//!         0.3, 0.0,
-//!         1.0, 1.3,
-//!         0.4, 2.1
-//!     ];
+//! // Dataset for 5 samples (number of samples is defined by the number of targets).
+//! let dataset = [
+//!     0.7, 0.0,
+//!     0.8, 1.0,
+//!     0.3, 0.0,
+//!     1.0, 1.3,
+//!     0.4, 2.1
+//! ];
 //!
-//!     // Target classes.
-//!     let targets = [1, 5, 1, -15, 5];
+//! // Target classes.
+//! let targets = [1, 5, 1, -15, 5];
 //!
-//!     let predictor: Classifier = Classifier::trainer()
-//!         .with_max_depth(15)
-//!         .with_trees(40)
-//!         .with_threads(num_cpus::get())
-//!         .with_seed(42)
-//!         .train(&dataset, &targets);
+//! let predictor: Classifier = Classifier::trainer()
+//!     .with_max_depth(15)
+//!     .with_trees(40)
+//!     .with_threads(num_cpus::get())
+//!     .with_seed(42)
+//!     .train(&dataset, &targets);
 //!
-//!     // Get predictions for same dataset.
-//!     let predictions = predictor.predict_batch(&dataset, num_cpus::get());
-//!     println!("Predictions: {:?}", predictions);
+//! // Get predictions for same dataset.
+//! let predictions = predictor.predict_batch(&dataset, num_cpus::get());
+//! println!("Predictions: {:?}", predictions);
 //!
-//!     // Now let's get probability distributions for each class. Use all CPU cores.
-//!     let proba = predictor.proba(&dataset, num_cpus::get());
-//!     println!("Probability distributions:");
-//!     for p in proba.chunks(predictor.num_classes()) {
-//!         println!("{:?}", p);
-//!     }
+//! // Now let's get probability distributions for each class. Use all CPU cores.
+//! let proba = predictor.proba(&dataset, num_cpus::get());
+//! println!("Probability distributions:");
+//! for p in proba.chunks(predictor.num_classes()) {
+//!     println!("{:?}", p);
 //! }
 //! ```
 //!

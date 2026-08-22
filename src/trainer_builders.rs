@@ -1,4 +1,4 @@
-use crate::{decision_tree::TrainConfig, ensemble_trainer::EnsembleConfig, MaxFeaturesPolicy};
+use crate::{MaxFeaturesPolicy, decision_tree::TrainConfig, ensemble_trainer::EnsembleConfig};
 
 pub trait TrainConfigProvider: Sized {
     fn train_config(&mut self) -> &mut TrainConfig;
